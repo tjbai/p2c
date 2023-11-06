@@ -1,0 +1,14 @@
+(library
+ (name parse)
+ (modules parse)
+ (libraries core))
+
+(library
+ (name codegen)
+ (modules codegen)
+ (libraries core))
+
+(executable
+ (name convert)
+ (modules convert)
+ (libraries core))
