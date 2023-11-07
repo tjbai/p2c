@@ -1,12 +1,17 @@
 (library
+ (name ast)
+ (modules ast)
+ (libraries core))
+
+(library
  (name parse)
  (modules parse)
- (libraries core))
+ (libraries core ast))
 
 (library
  (name codegen)
  (modules codegen)
- (libraries core))
+ (libraries core ast))
 
 (executable
  (name convert)
