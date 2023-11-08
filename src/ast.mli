@@ -31,7 +31,7 @@ type statement =
   | Function of {
       name : string;
       arguments : (identifier * primitive) list;
-      return : expression * primitive;
+      returnType : primitive;
       body : statement list;
     }
   | For of {
