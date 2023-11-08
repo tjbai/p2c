@@ -1,12 +1,15 @@
-type ident = string (* variable identifier, just a string *)
-type primitive = Int | Float | Boolean | Unknown (* primitive types *)
-type unaryOp = Not
+type primitive = Int | String | Boolean | Unknown (* primitive types *)
+type identifier = string (* variable identifier, just a string *)
+type coreIdentifier = Print | Input (* core functions *)
 
+(* binary operations *)
 type binaryOp =
   | Add
   | Subtract
   | Multiply
   | Divide
+  | And
+  | Or
   | Equal
   | NotEqual
   | Lt
@@ -14,24 +17,32 @@ type binaryOp =
   | Gt
   | Gte
 
+type unaryOp = Not
+
 type expression =
+  | IntLiteral of int
+  | StringLiteral of string
+  | BooleanLiteral of bool
+  | Identifier of identifier
+  | Assignment of { name : identifier; value : expression }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
-  | FunctionCall of { name : ident; arguments : expression list }
-  | Assignment of { name : ident; value : expression }
+  | FunctionCall of { name : identifier; arguments : expression list }
+  | CoreFunctionCall of { name : coreIdentifier; arguments : expression list }
 
 type statement =
   | Expression of expression
   | Function of {
       name : string;
-      arguments : (ident * primitive) list;
-      return : expression * primitive;
+      arguments : (identifier * primitive) list;
+      returnType : primitive;
       body : statement list;
     }
+  | Return of expression
   | For of {
-      value : ident;
+      value : identifier;
       increment : int;
-      target : int;
+      target : int; (* exclusive *)
       body : statement list;
     }
   | While of { test : expression; body : statement list }

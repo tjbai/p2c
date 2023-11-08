@@ -6,7 +6,9 @@
 (library
  (name ast)
  (modules ast)
- (libraries core))
+ (libraries core)
+ (preprocess
+  (pps ppx_jane)))
 
 (library
  (name lex)
