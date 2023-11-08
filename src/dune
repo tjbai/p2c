@@ -1,12 +1,22 @@
 (library
+ (name io)
+ (modules io)
+ (libraries core))
+
+(library
  (name ast)
  (modules ast)
  (libraries core))
 
 (library
+ (name lex)
+ (modules lex)
+ (libraries core ast))
+
+(library
  (name parse)
  (modules parse)
- (libraries core ast))
+ (libraries core ast lex))
 
 (library
  (name codegen)

@@ -1,5 +1,5 @@
-type ident = string (* variable identifier, just a string *)
-type primitive = Int | Float | Boolean | Unknown (* primitive types *)
+type identifier = string (* variable identifier, just a string *)
+type primitive = Int | String | Boolean | Unknown (* primitive types *)
 
 (* binary operations *)
 type binaryOp =
@@ -7,6 +7,8 @@ type binaryOp =
   | Subtract
   | Multiply
   | Divide
+  | And
+  | Or
   | Equal
   | NotEqual
   | Lt
@@ -17,22 +19,23 @@ type binaryOp =
 type unaryOp = Not
 
 type expression =
-  | Identifier of ident
-  | Assignment of { name : ident; value : expression }
+  | Identifier of identifier
+  | Literal of primitive
+  | Assignment of { name : identifier; value : expression }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
-  | FunctionCall of { name : ident; arguments : expression list }
+  | FunctionCall of { name : identifier; arguments : expression list }
 
 type statement =
   | Expression of expression
   | Function of {
       name : string;
-      arguments : (ident * primitive) list;
+      arguments : (identifier * primitive) list;
       return : expression * primitive;
       body : statement list;
     }
   | For of {
-      value : ident;
+      value : identifier;
       increment : int;
       target : int;
       body : statement list;
