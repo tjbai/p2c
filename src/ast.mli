@@ -1,5 +1,6 @@
-type identifier = string (* variable identifier, just a string *)
 type primitive = Int | String | Boolean | Unknown (* primitive types *)
+type identifier = string (* variable identifier, just a string *)
+type coreIdentifier = Print | Input (* core functions *)
 
 (* binary operations *)
 type binaryOp =
@@ -19,12 +20,15 @@ type binaryOp =
 type unaryOp = Not
 
 type expression =
+  | IntLiteral of int
+  | StringLiteral of string
+  | BooleanLiteral of bool
   | Identifier of identifier
-  | Literal of primitive
   | Assignment of { name : identifier; value : expression }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : identifier; arguments : expression list }
+  | CoreFunctionCall of { name : coreIdentifier; arguments : expression list }
 
 type statement =
   | Expression of expression
@@ -34,10 +38,11 @@ type statement =
       returnType : primitive;
       body : statement list;
     }
+  | Return of expression
   | For of {
       value : identifier;
       increment : int;
-      target : int;
+      target : int; (* exclusive upper bound *)
       body : statement list;
     }
   | While of { test : expression; body : statement list }
