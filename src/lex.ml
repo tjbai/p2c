@@ -14,16 +14,14 @@ type token =
   | Arrow
   | EOF
 
-(* type t = { source : string; offset : int } *)
-
-(* HELPERS *)
+(* helpers *)
 let stripIndent (s : string) : string * int = ("", 0)
 let in_range (s : string) (i : int) = String.length s > i
 
 (*
 1. Go one line at a time
 2. Skip empty lines
-3. Strip the indents and track indent level
+3. Strip indents and track indent level
    *)
 let tokenize (lines : string list) : token list =
   let rec tokenizeLine (line : string) (acc : token list) : token list = [] in
