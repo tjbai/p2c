@@ -1,16 +1,19 @@
 type token =
-  | Identifier of string
-  | Primitive of string
-  | BinaryOp of string
+  | Value of string
+  | Bop of string
+  | Uop of string
+  | IntDef
+  | StringDef
+  | BoolDef
   | Lparen
   | Rparen
   | Comma
   | Colon
-  | Indent (* start of a block *)
-  | Dedent (* end of a block *)
+  | Indent
+  | Dedent
   | Newline
-  | Arrow (* -> in function type annotations *)
-  | EOF
+  | Arrow
 
 val strip_indent : string -> string * int
+val split_and_process : string -> string list
 val tokenize : string list -> token list

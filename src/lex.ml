@@ -1,9 +1,12 @@
 open Core
 
 type token =
-  | Identifier of string
-  | Primitive of string
-  | BinaryOp of string
+  | Value of string
+  | Bop of string
+  | Uop of string
+  | IntDef
+  | StringDef
+  | BoolDef
   | Lparen
   | Rparen
   | Comma
@@ -13,18 +16,28 @@ type token =
   | Newline
   | Arrow
 
-(* helpers *)
-let _in_range (s : string) (i : int) = String.length s > i
+(* Constants *)
+let whitespace = [ ' '; '\t'; '\n' ]
 
-(* Whitespace criterion *)
-let is_whitespace (c : char) : bool =
-  Char.( = ) c ' ' || Char.( = ) c '\t' || Char.( = ) c '\n'
+let binary_ops =
+  [ "+"; "*"; "/"; "-"; "and"; "or"; "=="; "!="; "<"; "<="; ">"; ">=" ]
+
+let unary_ops = [ "not" ]
 
 (* Remove first n characters from string *)
-let slice_front (s : string) (n : int) =
+let slice_front (s : string) (n : int) : string =
   String.sub s ~pos:n ~len:(String.length s - n)
 
-(* Count and remove leading tabs, TODO: count spaces as tabs? *)
+(* Remove last n characters from string *)
+let _slice_back (s : string) (n : int) : string =
+  String.sub s ~pos:0 ~len:(String.length s - n)
+
+(* Slice between l and r *)
+let slice (s : string) (l : int) (r : int) : string =
+  String.sub s ~pos:l ~len:(r - l)
+
+(* Count and remove leading tabs *)
+(* NOTE: Count spaces as tabs? *)
 let strip_indent (s : string) : string * int =
   let rec aux (rem : string) (i : int) =
     if String.length rem > 0 && Char.( = ) rem.[0] '\t' then
@@ -33,11 +46,31 @@ let strip_indent (s : string) : string * int =
   in
   aux s 0
 
-let tokenize_line (line : string) : token list =
-  let rec aux (rem : string list) (acc : token list) =
+(* Split line into whitespace-separated tokens,
+   split values from operators and other semantics *)
+let split_and_process (s : string) : string list =
+  let seps = [ "("; ")"; ","; ":" ] @ binary_ops in
+
+  (* NOTE: This is not beautiful, possible point of failure *)
+  let rec separate (s : string) (acc : string list) l r : string list =
+    if r = String.length s then List.rev @@ (slice s l r :: acc)
+    else if List.mem seps (String.make 1 s.[r]) ~equal:String.( = ) then
+      separate s (slice s r (r + 1) :: slice s l r :: acc) (r + 1) (r + 1)
+    else separate s acc l (r + 1)
+  in
+
+  s
+  |> String.split_on_chars ~on:whitespace
+  |> List.fold ~init:[] ~f:(fun acc el -> acc @ separate el [] 0 0)
+  |> List.filter ~f:(fun s -> String.length s > 0)
+
+let tokenize_line (line : string list) : token list =
+  let rec aux (acc : token list) (rem : string list) =
     match rem with
-    | [] -> List.rev acc
+    | [] -> List.rev (Newline :: acc)
     | hd :: tl ->
+        (* NOTE: Might just want to _parse_ some
+           direct values here *)
         let next_token =
           match hd with
           | "(" -> Lparen
@@ -45,24 +78,21 @@ let tokenize_line (line : string) : token list =
           | "," -> Comma
           | ":" -> Colon
           | "->" -> Arrow
-          | _ -> Newline
+          | "int" -> IntDef
+          | "string" -> StringDef
+          | "bool" -> BoolDef
+          | _ when List.mem binary_ops hd ~equal:String.( = ) -> Bop hd
+          | _ when List.mem unary_ops hd ~equal:String.( = ) -> Uop hd
+          | _ -> Value hd (* Either identifier or primitive *)
         in
-        aux tl (next_token :: acc)
+        aux (next_token :: acc) tl
   in
-
-  (* Convert to list of tokens *)
-  aux (String.split_on_chars line ~on:[ ' '; '\t'; '\n' ]) []
-
-(*
-1. Go one line at a time
-2. Skip empty lines
-3. Strip indents and track indent level
-   *)
+  aux [] line
 
 let tokenize (lines : string list) : token list =
   let f (tokens, prev_indent) line =
     let line, cur_indent = strip_indent line in
-    let new_tokens = tokenize_line line in
+    let new_tokens = line |> split_and_process |> tokenize_line in
 
     match compare cur_indent prev_indent with
     | c when c > 0 -> (new_tokens @ (Indent :: tokens), cur_indent)
