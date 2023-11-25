@@ -16,8 +16,14 @@ let test_split_and_process _ =
   assert_equal [ "a"; ","; "b"; ","; "c" ] @@ split_and_process "a , b , c";
   assert_equal [ "a"; ":"; "b"; ","; "c" ] @@ split_and_process "a: b, c ";
   assert_equal [ "("; "a"; ")" ] @@ split_and_process "(a)";
-  assert_equal [ "("; "("; "a"; "-"; "b"; ")"; "+"; "c"; ")" ]
-  @@ split_and_process "((a-b)+c)"
+
+  let expr1 = [ "("; "("; "a"; "-"; "b"; ")"; "+"; "c"; ")" ] in
+  let expr2 = [ "("; "x"; "/"; "("; "y"; "*"; "z"; ")"; ")" ] in
+
+  assert_equal expr1 @@ split_and_process "((a-b)+c)";
+  assert_equal expr2 @@ split_and_process "(x/(y*z))";
+  assert_equal (expr1 @ ("-" :: expr2))
+  @@ split_and_process "((a-b)+c) - (x/(y*z))"
 
 let tests =
   "Lex tests"
