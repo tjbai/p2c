@@ -24,7 +24,7 @@ type expression =
   | StringLiteral of string
   | BooleanLiteral of bool
   | Identifier of identifier
-  | Assignment of { name : identifier; value : expression }
+  | Assignment of { name : identifier; t : primitive; value : expression }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : identifier; arguments : expression list }

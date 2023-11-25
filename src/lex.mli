@@ -12,4 +12,5 @@ type token =
   | Arrow (* -> in function type annotations *)
   | EOF
 
+val strip_indent : string -> string * int
 val tokenize : string list -> token list
