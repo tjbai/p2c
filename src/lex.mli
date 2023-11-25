@@ -12,4 +12,4 @@ type token =
   | Arrow (* -> in function type annotations *)
   | EOF
 
-val tokenize : string -> token list
+val tokenize : string list -> token list

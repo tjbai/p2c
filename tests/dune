@@ -1,7 +1,9 @@
 (test
  (name tests)
- (libraries core ounit2))
+ (libraries core ounit2)
+ (modules tests))
 
 (test
  (name lextests)
- (libraries core ounit2))
+ (libraries core ounit2 lex)
+ (modules lextests))
