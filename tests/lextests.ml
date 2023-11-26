@@ -26,14 +26,17 @@ let test_split_and_process _ =
   @@ split_and_process "((a-b)+c) - (x/(y*z))"
 
 let test_tokenize_line _ =
-  assert_equal [ Value "x"; Colon; IntDef; Assign; Value "20"; Newline ]
-  @@ ("x: int = 20" |> split_and_process |> tokenize_line);
+  assert_equal
+    [ Value "x"; Colon; IntDef; Assign; Value "20"; Newline ]
+    ("x: int = 20" |> split_and_process |> tokenize_line);
 
-  assert_equal [ While; Value "i"; Bop "<"; Value "10"; Colon; Newline ]
-  @@ ("while i < 10:" |> split_and_process |> tokenize_line);
+  assert_equal
+    [ While; Value "i"; Bop "<"; Value "10"; Colon; Newline ]
+    ("while i < 10:" |> split_and_process |> tokenize_line);
 
-  assert_equal [ If; Value "a"; Bop "=="; Value "b"; Colon; Newline ]
-  @@ ("if a == b:" |> split_and_process |> tokenize_line);
+  assert_equal
+    [ If; Value "a"; Bop "=="; Value "b"; Colon; Newline ]
+    ("if a == b:" |> split_and_process |> tokenize_line);
 
   assert_equal
     [
@@ -47,7 +50,7 @@ let test_tokenize_line _ =
       Colon;
       Newline;
     ]
-  @@ ("for i in range(10):" |> split_and_process |> tokenize_line);
+    ("for i in range(10):" |> split_and_process |> tokenize_line);
 
   assert_equal
     [
@@ -62,7 +65,7 @@ let test_tokenize_line _ =
       Rparen;
       Newline;
     ]
-  @@ ("((a - b) + c)" |> split_and_process |> tokenize_line);
+    ("((a - b) + c)" |> split_and_process |> tokenize_line);
 
   assert_equal
     [
@@ -79,7 +82,7 @@ let test_tokenize_line _ =
       Value "x";
       Newline;
     ]
-  @@ ("((a-b)+c) - x" |> split_and_process |> tokenize_line);
+    ("((a-b)+c) - x" |> split_and_process |> tokenize_line);
 
   assert_equal
     [
@@ -99,9 +102,71 @@ let test_tokenize_line _ =
       Colon;
       Newline;
     ]
-  @@ ("def foo(a: int, b: int) -> int:" |> split_and_process |> tokenize_line)
+    ("def foo(a: int, b: int) -> int:" |> split_and_process |> tokenize_line)
 
-let test_tokenize _ = assert_equal 0 0
+let test_tokenize _ =
+  assert_equal
+    [
+      If;
+      Value "a";
+      Bop "<";
+      Value "b";
+      Colon;
+      Newline;
+      Indent;
+      Value "print";
+      Lparen;
+      Value "a";
+      Rparen;
+      Newline;
+      Dedent;
+      Else;
+      Colon;
+      Newline;
+      Indent;
+      Value "print";
+      Lparen;
+      Value "b";
+      Rparen;
+      Newline;
+      Dedent;
+    ]
+    ("if a < b:\n\tprint(a)\nelse:\n\tprint(b)\n" |> tokenize);
+
+  assert_equal
+    [
+      FunDef;
+      Value "add";
+      Lparen;
+      Value "a";
+      Colon;
+      IntDef;
+      Comma;
+      Value "b";
+      Colon;
+      IntDef;
+      Rparen;
+      Arrow;
+      IntDef;
+      Colon;
+      Newline;
+      Indent;
+      Return;
+      Value "a";
+      Bop "+";
+      Value "b";
+      Newline;
+      Dedent;
+      Newline;
+      Value "add";
+      Lparen;
+      Value "2";
+      Bop "+";
+      Value "3";
+      Rparen;
+      Newline;
+    ]
+    ("def add(a: int, b: int) -> int:\n\treturn a + b \n\nadd(2+3) " |> tokenize)
 
 let tests =
   "Lex tests"

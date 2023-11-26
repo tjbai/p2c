@@ -8,6 +8,7 @@ type token =
   | Assign
   | FunDef
   | Arrow
+  | Return
   | IntDef
   | StringDef
   | BoolDef

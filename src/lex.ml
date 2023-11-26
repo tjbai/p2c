@@ -7,6 +7,7 @@ type token =
   | Assign
   | FunDef
   | Arrow
+  | Return
   | IntDef
   | StringDef
   | BoolDef
@@ -45,7 +46,6 @@ let slice (s : string) (l : int) (r : int) : string =
   String.sub s ~pos:l ~len:(r - l)
 
 (* Count and remove leading tabs *)
-(* NOTE: Count spaces as tabs? *)
 let strip_indent (s : string) : string * int =
   let rec aux (rem : string) (i : int) =
     if String.length rem > 0 && Char.( = ) rem.[0] '\t' then
@@ -56,7 +56,6 @@ let strip_indent (s : string) : string * int =
 
 (* Split line into whitespace-separated tokens,
    separate values from operators and other semantics *)
-
 (* NOTE: This is not elegant, possible point of failure *)
 let split_and_process (s : string) : string list =
   let seps = [ "("; ")"; ","; ":" ] @ binary_ops in
@@ -93,26 +92,23 @@ let tokenize_line (line : string list) : token list =
     | hd :: tl ->
         let next_token =
           match hd with
-          (* Definitions *)
           | "=" -> Assign
           | "def" -> FunDef
           | "->" -> Arrow
+          | "return" -> Return
           | "int" -> IntDef
           | "string" -> StringDef
           | "bool" -> BoolDef
-          (* Control flow *)
           | "for" -> For
           | "in" -> In
           | "while" -> While
           | "if" -> If
           | "elif" -> Elif
           | "else" -> Else
-          (* Semantics *)
           | "(" -> Lparen
           | ")" -> Rparen
           | "," -> Comma
           | ":" -> Colon
-          (* Building blocks *)
           | _ when List.mem binary_ops hd ~equal:String.( = ) -> Bop hd
           | _ when List.mem unary_ops hd ~equal:String.( = ) -> Uop hd
           | _ -> Value hd (* Either identifier or primitive *)
@@ -122,15 +118,18 @@ let tokenize_line (line : string list) : token list =
   aux [] line
 
 let tokenize (file : string) : token list =
+  let init = ([], 0) in
+
   let f (tokens, prev_indent) line =
     let line, cur_indent = strip_indent line in
     let new_tokens = line |> split_and_process |> tokenize_line in
 
     match compare cur_indent prev_indent with
-    | c when c > 0 -> (new_tokens @ (Indent :: tokens), cur_indent)
-    | c when c < 0 -> (new_tokens @ (Dedent :: tokens), cur_indent)
-    | _ -> (new_tokens @ tokens, cur_indent)
+    | c when c > 0 -> (tokens @ [ Indent ] @ new_tokens, cur_indent)
+    | c when c < 0 -> (tokens @ [ Dedent ] @ new_tokens, cur_indent)
+    | _ -> (tokens @ new_tokens, cur_indent)
   in
 
-  let tokens, _ = file |> String.split_lines |> List.fold ~init:([], 0) ~f in
-  tokens
+  match file |> String.split_lines |> List.fold ~init ~f with
+  | t, indent when indent > 0 -> t @ [ Dedent ]
+  | t, _ -> t

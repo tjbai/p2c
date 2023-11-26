@@ -1,9 +1,4 @@
 (library
- (name io)
- (modules io)
- (libraries core))
-
-(library
  (name ast)
  (modules ast)
  (libraries core)
