@@ -4,9 +4,18 @@ type token =
   | Value of string
   | Bop of string
   | Uop of string
+  | Assign
+  | FunDef
+  | Arrow
   | IntDef
   | StringDef
   | BoolDef
+  | For
+  | In
+  | While
+  | If
+  | Elif
+  | Else
   | Lparen
   | Rparen
   | Comma
@@ -14,7 +23,6 @@ type token =
   | Indent
   | Dedent
   | Newline
-  | Arrow
 
 (* Constants *)
 let whitespace = [ ' '; '\t'; '\n' ]
@@ -47,40 +55,64 @@ let strip_indent (s : string) : string * int =
   aux s 0
 
 (* Split line into whitespace-separated tokens,
-   split values from operators and other semantics *)
+   separate values from operators and other semantics *)
+
+(* NOTE: This is not elegant, possible point of failure *)
 let split_and_process (s : string) : string list =
   let seps = [ "("; ")"; ","; ":" ] @ binary_ops in
 
-  (* NOTE: This is not beautiful, possible point of failure *)
+  (* Separate values from operators and semantics *)
   let rec separate (s : string) (acc : string list) l r : string list =
-    if r = String.length s then List.rev @@ (slice s l r :: acc)
+    if r = String.length s then slice s l r :: acc |> List.rev
     else if List.mem seps (String.make 1 s.[r]) ~equal:String.( = ) then
       separate s (slice s r (r + 1) :: slice s l r :: acc) (r + 1) (r + 1)
     else separate s acc l (r + 1)
+  in
+
+  (* Address combination symbols like -> *)
+  let rec join (acc : string list) (l : string list) =
+    match l with
+    | [] -> List.rev acc
+    | x :: y :: tl when String.( = ) x "-" && String.( = ) y ">" ->
+        join ("->" :: acc) tl
+    | hd :: tl -> join (hd :: acc) tl
   in
 
   s
   |> String.split_on_chars ~on:whitespace
   |> List.fold ~init:[] ~f:(fun acc el -> acc @ separate el [] 0 0)
   |> List.filter ~f:(fun s -> String.length s > 0)
+  |> join []
 
+(* Convert processed line to token types *)
+(* NOTE: Maybe  _parse_ some relevant values here? *)
 let tokenize_line (line : string list) : token list =
   let rec aux (acc : token list) (rem : string list) =
     match rem with
     | [] -> List.rev (Newline :: acc)
     | hd :: tl ->
-        (* NOTE: Might just want to _parse_ some
-           direct values here *)
         let next_token =
           match hd with
-          | "(" -> Lparen
-          | ")" -> Rparen
-          | "," -> Comma
-          | ":" -> Colon
+          (* Definitions *)
+          | "=" -> Assign
+          | "def" -> FunDef
           | "->" -> Arrow
           | "int" -> IntDef
           | "string" -> StringDef
           | "bool" -> BoolDef
+          (* Control flow *)
+          | "for" -> For
+          | "in" -> In
+          | "while" -> While
+          | "if" -> If
+          | "elif" -> Elif
+          | "else" -> Else
+          (* Semantics *)
+          | "(" -> Lparen
+          | ")" -> Rparen
+          | "," -> Comma
+          | ":" -> Colon
+          (* Building blocks *)
           | _ when List.mem binary_ops hd ~equal:String.( = ) -> Bop hd
           | _ when List.mem unary_ops hd ~equal:String.( = ) -> Uop hd
           | _ -> Value hd (* Either identifier or primitive *)
@@ -89,7 +121,7 @@ let tokenize_line (line : string list) : token list =
   in
   aux [] line
 
-let tokenize (lines : string list) : token list =
+let tokenize (file : string) : token list =
   let f (tokens, prev_indent) line =
     let line, cur_indent = strip_indent line in
     let new_tokens = line |> split_and_process |> tokenize_line in
@@ -100,4 +132,5 @@ let tokenize (lines : string list) : token list =
     | _ -> (new_tokens @ tokens, cur_indent)
   in
 
-  match List.fold lines ~init:([], 0) ~f with tokens, _ -> List.rev tokens
+  let tokens, _ = file |> String.split_lines |> List.fold ~init:([], 0) ~f in
+  tokens
