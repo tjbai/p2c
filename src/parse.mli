@@ -1,4 +1,4 @@
 open Ast
+open Lex
 
-val parseExpression : string -> expression
-val parseStatement : string -> statement
+val parse : token list -> ast

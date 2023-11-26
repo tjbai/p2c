@@ -13,7 +13,7 @@
 (library
  (name lex)
  (modules lex)
- (libraries core ast))
+ (libraries core))
 
 (library
  (name parse)
