@@ -41,11 +41,13 @@ let test_finding_closure _ =
       [ Bop "+"; Value "f"; Newline ] )
     ("(a+(b+c)) + (d+e)) + f" |> tokenize |> find_closure)
 
+(* string -> expression *)
+let toe (s : string) : expression =
+  match s |> tokenize |> parse_expression with e, _ -> e
+
 let test_simple_expressions _ =
-  (* string -> expression *)
-  let toe (s : string) : expression =
-    match s |> tokenize |> parse_expression with e, _ -> e
-  in
+  assert_equal (UnaryOp { operator = Not; operand = Identifier "b" })
+  @@ toe "not b";
 
   assert_equal
     (BinaryOp
@@ -89,13 +91,51 @@ let test_simple_expressions _ =
        })
   @@ toe "helloword = \"hello\" + \'world\'"
 
+let test_nested_expressions _ =
+  assert_equal
+    (BinaryOp
+       {
+         operator = Add;
+         left = Identifier "a";
+         right =
+           BinaryOp
+             { operator = Add; left = Identifier "b"; right = Identifier "c" };
+       })
+  @@ toe "a+(b+c)";
+
+  assert_equal
+    (BinaryOp
+       {
+         operator = Add;
+         left =
+           BinaryOp
+             { operator = Add; left = Identifier "a"; right = Identifier "b" };
+         right = Identifier "c";
+       })
+  @@ toe "(a+b)+c";
+
+  assert_equal
+    (BinaryOp { operator = Add; left = Identifier "a"; right = IntLiteral 10 })
+  @@ toe "(((a+10)))";
+
+  assert_equal
+    (UnaryOp
+       {
+         operator = Not;
+         operand =
+           BinaryOp
+             { operator = Add; left = Identifier "a"; right = IntLiteral 10 };
+       })
+  @@ toe "not (((a+10)))"
+
 let tests =
   "Parse tests"
   >: test_list
        [
          "Convert value to literal" >:: test_convert;
-         "Simple expressions" >:: test_simple_expressions;
          "Find closing right parentheses" >:: test_finding_closure;
+         "Simple expressions" >:: test_simple_expressions;
+         "Nested expressions" >:: test_nested_expressions;
        ]
 
 let () = run_test_tt_main tests

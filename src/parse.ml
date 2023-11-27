@@ -37,7 +37,7 @@ let map_bop (s : string) : binaryOp =
 
 type ('a, 'b) union = A of 'a | B of 'b
 
-let _map_fn (s : string) : (coreIdentifier, identifier) union =
+let _map_fn (s : string) : (coreIdentifier, string) union =
   match s with
   | "print" -> A Print
   | "input" -> A Input
@@ -80,9 +80,17 @@ let rec parse_expression (ts : token list) : expression * token list =
       (* let closure, tl = find_closure tl in *)
       failwith "incomplete"
   (* (expression) tl *)
-  | Lparen :: _ ->
-      (* let closure, tl = find_closure tl in *)
-      failwith "incomplete"
+  | Lparen :: tl -> (
+      let closure, tl = find_closure tl in
+      let left, _ = parse_expression closure in
+      match tl with
+      (* (expression) bop tl' *)
+      | Bop op :: tl' ->
+          let operator = map_bop op in
+          let right, tl' = parse_expression tl' in
+          (BinaryOp { operator; left; right }, tl')
+      (* (expression) tl *)
+      | _ -> (left, tl))
   (* base case *)
   | Value s :: tl -> (convert s, tl)
   | [] -> failwith "tried to parse empty expression"
