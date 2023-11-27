@@ -44,13 +44,31 @@ let _map_fn (s : string) : (coreIdentifier, identifier) union =
   | "range" -> A Range
   | _ -> B s
 
+(* Look for a closing Rparen *)
+let find_closure (ts : token list) : token list * token list =
+  let rec aux acc ts (need : int) : token list * token list =
+    match ts with
+    | [] -> failwith "could not find closure..."
+    | Rparen :: tl when need = 1 -> (List.rev acc, tl)
+    | Rparen :: tl -> aux (Rparen :: acc) tl (need - 1)
+    | Lparen :: tl -> aux (Lparen :: acc) tl (need + 1)
+    | hd :: tl -> aux (hd :: acc) tl need
+  in
+  aux [] ts 1
+
 (* Parse a complete expression from tokens *)
+(* NOTE: Our 'find_closure' methodology can lead to quadratic runtime *)
 let rec parse_expression (ts : token list) : expression * token list =
   match ts with
   (* name = tl *)
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       (Assignment { name; t = Unknown; value }, tl)
+  (* op tl *)
+  | Uop op :: tl ->
+      let operator = map_uop op in
+      let operand, tl = parse_expression tl in
+      (UnaryOp { operator; operand }, tl)
   (* s op tl *)
   | Value s :: Bop op :: tl ->
       let operator = map_bop op in
@@ -58,14 +76,13 @@ let rec parse_expression (ts : token list) : expression * token list =
       let right, tl = parse_expression tl in
       (BinaryOp { operator; left; right }, tl)
   (* fn(expression) tl *)
-  | Value _ :: Lparen :: _ -> failwith "incomplete"
-  (* op tl *)
-  | Uop op :: tl ->
-      let operator = map_uop op in
-      let operand, tl = parse_expression tl in
-      (UnaryOp { operator; operand }, tl)
+  | Value _ :: Lparen :: _ ->
+      (* let closure, tl = find_closure tl in *)
+      failwith "incomplete"
   (* (expression) tl *)
-  | Lparen :: _ -> failwith "incomplete"
+  | Lparen :: _ ->
+      (* let closure, tl = find_closure tl in *)
+      failwith "incomplete"
   (* base case *)
   | Value s :: tl -> (convert s, tl)
   | [] -> failwith "tried to parse empty expression"

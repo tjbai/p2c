@@ -11,6 +11,36 @@ let test_convert _ =
   assert_equal (BooleanLiteral false) @@ convert "False";
   assert_equal (BooleanLiteral true) @@ convert "True"
 
+let test_finding_closure _ =
+  assert_equal
+    ([ Value "a"; Bop "+"; Value "b" ], [ Newline ])
+    ("a+b)" |> tokenize |> find_closure);
+
+  assert_equal
+    ([ Lparen; Value "a"; Bop "+"; Value "b"; Rparen ], [ Newline ])
+    ("(a+b))" |> tokenize |> find_closure);
+
+  assert_equal
+    ( [
+        Lparen;
+        Value "a";
+        Bop "+";
+        Lparen;
+        Value "b";
+        Bop "+";
+        Value "c";
+        Rparen;
+        Rparen;
+        Bop "+";
+        Lparen;
+        Value "d";
+        Bop "+";
+        Value "e";
+        Rparen;
+      ],
+      [ Bop "+"; Value "f"; Newline ] )
+    ("(a+(b+c)) + (d+e)) + f" |> tokenize |> find_closure)
+
 let test_simple_expressions _ =
   (* string -> expression *)
   let toe (s : string) : expression =
@@ -65,6 +95,7 @@ let tests =
        [
          "Convert value to literal" >:: test_convert;
          "Simple expressions" >:: test_simple_expressions;
+         "Find closing right parentheses" >:: test_finding_closure;
        ]
 
 let () = run_test_tt_main tests
