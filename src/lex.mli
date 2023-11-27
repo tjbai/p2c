@@ -19,6 +19,8 @@ type token =
   | If
   | Elif
   | Else
+  | Break
+  | Continue
   (* Scoping *)
   | Lparen
   | Rparen

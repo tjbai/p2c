@@ -3,8 +3,8 @@ open Core
 open Lex
 
 type ('a, 'b) union = A of 'a | B of 'b
-type expr = expression * token list
-type stmt = statement * token list
+type e_context = expression * token list
+type s_context = statement * token list
 
 (* Value s -> IntLiteral | StringLiteral | BooleanLiteral | Identifier *)
 let literal (s : string) : expression =
@@ -77,7 +77,7 @@ let split_on (t : token) (ts : token list) : token list list =
   in
   aux ts [] []
 
-let rec parse_fn_call (fn : string) (tl : token list) : expr =
+let rec parse_fn_call (fn : string) (tl : token list) : e_context =
   let rec parse_arguments tl (args : expression list) : expression list =
     match tl with
     | [] -> List.rev args
@@ -98,7 +98,7 @@ let rec parse_fn_call (fn : string) (tl : token list) : expr =
     shunting-yard algorithm to properly handle
    operator precedence *)
 (* NOTE: Refactor for readability *)
-and parse_expression (ts : token list) : expr =
+and parse_expression (ts : token list) : e_context =
   let rec aux ts (es : expression list) (ops : binaryOp list) =
     match ts with
     (* function *)
@@ -141,27 +141,35 @@ and parse_expression (ts : token list) : expr =
       (Assignment { name; t = Unknown; value }, tl)
   | _ -> aux ts [] []
 
-(* Parse a complete statement from tokens *)
-let parse_statement (ts : token list) : stmt = match ts with _ -> (Break, [])
+(* Parse a single statement *)
+let rec parse_statement (ts : token list) : s_context =
+  match ts with
+  | FunDef :: tl -> (Break, tl)
+  | For :: tl -> (Break, tl)
+  | While :: tl -> (Break, tl)
+  | (If | Elif | Else) :: tl -> (Break, tl)
+  | _ -> failwith "incomplete"
 
-let parse (tokens : token list) : ast =
-  let rec aux (t : token list) (acc : ast) : ast * token list =
-    match t with
-    (* Out of tokens, return acc *)
-    | [] -> (List.rev acc, [])
-    (* Skip empty lines *)
+(* Parse a list of statements *)
+and parse (ts : token list) : ast =
+  let rec aux (tl : token list) (acc : ast) : ast * token list =
+    match tl with
     | Newline :: tl -> aux tl acc
-    | _ -> (
-        match parse_statement t with
-        | new_statement, tl -> aux tl (new_statement :: acc))
+    | [] -> (List.rev acc, [])
+    | _ ->
+        let new_statement, tl = parse_statement tl in
+        aux tl (new_statement :: acc)
   in
-  match aux tokens [] with ast, _ -> ast
+  match aux ts [] with ast, _ -> ast
 
+(* DFS to infer assignment types from leaf literals *)
 let infer_types (ast : ast) : ast = ast
 
-(* DEPRECATED: Naive parse implementation that
+(* DEPRECATED STUFF *)
+
+(* Naive parse implementation that
     doesn't consider operator precedence *)
-let rec _parse_expression (ts : token list) : expr =
+let rec _parse_expression (ts : token list) : e_context =
   match ts with
   (* name = tl *)
   | Value name :: Assign :: tl ->

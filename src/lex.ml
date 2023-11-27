@@ -17,6 +17,8 @@ type token =
   | If
   | Elif
   | Else
+  | Break
+  | Continue
   | Lparen
   | Rparen
   | Comma
@@ -105,6 +107,8 @@ let tokenize_line (line : string list) : token list =
           | "if" -> If
           | "elif" -> Elif
           | "else" -> Else
+          | "break" -> Break
+          | "continue" -> Continue
           | "(" -> Lparen
           | ")" -> Rparen
           | "," -> Comma
