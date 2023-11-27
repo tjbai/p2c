@@ -1,12 +1,7 @@
+(*CodeGen module*)
 
-open Core
-
-
-module CodeGen(Tree: ast) = sig
-  
-    type t 
-
-    val convertTreeToText: Tree:ast -> string
-
-
+module type CodeGen = sig
+  val convertToString : Ast.statement list -> string
 end
+
+module ConModule : CodeGen
