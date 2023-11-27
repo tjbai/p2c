@@ -29,6 +29,7 @@ type expression =
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : identifier; arguments : expression list }
   | CoreFunctionCall of { name : coreIdentifier; arguments : expression list }
+[@@deriving sexp]
 
 type statement =
   | Expression of expression
@@ -56,3 +57,4 @@ type statement =
 type ast = statement list
 
 val showAst : ast -> string
+val showExpression : expression -> string

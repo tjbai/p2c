@@ -1,6 +1,8 @@
-type primitive = Int | String | Boolean | Unknown (* primitive types *)
-type identifier = string (* variable identifier, just a string *)
-type coreIdentifier = Print | Input (* core functions *)
+open Sexplib.Std (* need for string_of_sexp *)
+
+type primitive = Int | String | Boolean | Unknown [@@deriving sexp]
+type identifier = string [@@deriving sexp]
+type coreIdentifier = Print | Input | Range [@@deriving sexp]
 
 (* binary operations *)
 type binaryOp =
@@ -16,8 +18,9 @@ type binaryOp =
   | Lte
   | Gt
   | Gte
+[@@deriving sexp]
 
-type unaryOp = Not
+type unaryOp = Not [@@deriving sexp]
 
 type expression =
   | IntLiteral of int
@@ -29,6 +32,7 @@ type expression =
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : identifier; arguments : expression list }
   | CoreFunctionCall of { name : coreIdentifier; arguments : expression list }
+[@@deriving sexp]
 
 type statement =
   | Expression of expression
@@ -42,7 +46,7 @@ type statement =
   | For of {
       value : identifier;
       increment : int;
-      target : int; (* exclusive *)
+      target : int; (* exclusive upper bound *)
       body : statement list;
     }
   | While of { test : expression; body : statement list }
@@ -54,5 +58,8 @@ type statement =
   | Continue
 
 type ast = statement list
+
+let showExpression (e : expression) : string =
+  e |> sexp_of_expression |> Sexplib.Sexp.to_string
 
 let showAst (tree : ast) : string = match tree with _ -> ""
