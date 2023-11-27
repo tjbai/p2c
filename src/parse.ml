@@ -35,6 +35,8 @@ let map_bop (s : string) : binaryOp =
   | ">=" -> Gte
   | _ -> failwith "invalid binary op"
 
+let prec (op : binaryOp) : int = match op with Equal | NotEqual -> 0 | _ -> 1
+
 type ('a, 'b) union = A of 'a | B of 'b
 
 let _map_fn (s : string) : (coreIdentifier, string) union =
@@ -56,24 +58,63 @@ let find_closure (ts : token list) : token list * token list =
   in
   aux [] ts 1
 
-(* Parse a complete expression from tokens *)
-(* NOTE: Our 'find_closure' methodology can lead to quadratic runtime *)
+(* This version of parse_expression implements the
+   shunting-yard algorithm to properly handle operator precedence *)
 let rec parse_expression (ts : token list) : expression * token list =
+  let rec aux ts (es : expression list) (ops : binaryOp list) =
+    match ts with
+    | Value _ :: Lparen :: _ -> failwith "incomplete"
+    | Lparen :: tl ->
+        let closure, tl = find_closure tl in
+        let e, _ = parse_expression closure in
+        aux tl (e :: es) ops
+    (* Value -> push to expression stack *)
+    | Value s :: tl -> aux tl (convert s :: es) ops
+    | Bop op :: tl -> (
+        let cop = map_bop op in
+        match (ops, es) with
+        (* If top has >= precedence, pop *)
+        | top :: ops, right :: left :: es when prec top >= prec cop ->
+            aux ts (BinaryOp { operator = top; left; right } :: es) ops
+        | _ -> aux tl es (cop :: ops))
+    | Uop op :: tl ->
+        let operator = map_uop op in
+        let operand, tl = parse_expression tl in
+        aux tl (UnaryOp { operator; operand } :: es) ops
+    (* While ops still exist, pop *)
+    | _ -> (
+        match (ops, es) with
+        | topop :: remops, right :: left :: remes ->
+            aux ts (BinaryOp { operator = topop; left; right } :: remes) remops
+        (* Base case *)
+        | _, [ x ] -> (x, ts)
+        | _ -> failwith "something went wrong")
+  in
+
+  (* Check for assignment *)
+  match ts with
+  | Value name :: Assign :: tl ->
+      let value, tl = parse_expression tl in
+      (Assignment { name; t = Unknown; value }, tl)
+  | _ -> aux ts [] []
+
+(* DEPRECATED: Naive parse expression implementation *)
+let rec _parse_expression (ts : token list) : expression * token list =
   match ts with
   (* name = tl *)
   | Value name :: Assign :: tl ->
-      let value, tl = parse_expression tl in
+      let value, tl = _parse_expression tl in
       (Assignment { name; t = Unknown; value }, tl)
   (* op tl *)
   | Uop op :: tl ->
       let operator = map_uop op in
-      let operand, tl = parse_expression tl in
+      let operand, tl = _parse_expression tl in
       (UnaryOp { operator; operand }, tl)
   (* s op tl *)
   | Value s :: Bop op :: tl ->
       let operator = map_bop op in
       let left = convert s in
-      let right, tl = parse_expression tl in
+      let right, tl = _parse_expression tl in
       (BinaryOp { operator; left; right }, tl)
   (* fn(expression) tl *)
   | Value _ :: Lparen :: _ ->
@@ -82,12 +123,12 @@ let rec parse_expression (ts : token list) : expression * token list =
   (* (expression) tl *)
   | Lparen :: tl -> (
       let closure, tl = find_closure tl in
-      let left, _ = parse_expression closure in
+      let left, _ = _parse_expression closure in
       match tl with
       (* (expression) bop tl' *)
       | Bop op :: tl' ->
           let operator = map_bop op in
-          let right, tl' = parse_expression tl' in
+          let right, tl' = _parse_expression tl' in
           (BinaryOp { operator; left; right }, tl')
       (* (expression) tl *)
       | _ -> (left, tl))
