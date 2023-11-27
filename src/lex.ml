@@ -24,6 +24,7 @@ type token =
   | Indent
   | Dedent
   | Newline
+[@@deriving equal]
 
 (* Constants *)
 let whitespace = [ ' '; '\t'; '\n' ]

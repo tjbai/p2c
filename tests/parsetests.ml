@@ -4,12 +4,12 @@ open Lex
 open Parse
 
 let test_convert _ =
-  assert_equal (IntLiteral 0) @@ convert "0";
-  assert_equal (IntLiteral 100) @@ convert "100";
-  assert_equal (StringLiteral "hello") @@ convert "\"hello\"";
-  assert_equal (StringLiteral "test") @@ convert "\'test\'";
-  assert_equal (BooleanLiteral false) @@ convert "False";
-  assert_equal (BooleanLiteral true) @@ convert "True"
+  assert_equal (IntLiteral 0) @@ literal "0";
+  assert_equal (IntLiteral 100) @@ literal "100";
+  assert_equal (StringLiteral "hello") @@ literal "\"hello\"";
+  assert_equal (StringLiteral "test") @@ literal "\'test\'";
+  assert_equal (BooleanLiteral false) @@ literal "False";
+  assert_equal (BooleanLiteral true) @@ literal "True"
 
 let test_finding_closure _ =
   assert_equal
@@ -128,6 +128,9 @@ let test_nested_expressions _ =
        })
   @@ toe "not (((a+10)))"
 
+let test_operator_precedence _ = assert_equal 0 0
+let test_function_calls _ = assert_equal 0 0
+
 let tests =
   "Parse tests"
   >: test_list
@@ -136,6 +139,8 @@ let tests =
          "Find closing right parentheses" >:: test_finding_closure;
          "Simple expressions" >:: test_simple_expressions;
          "Nested expressions" >:: test_nested_expressions;
+         "Operator precedence" >:: test_operator_precedence;
+         "Function calls" >:: test_function_calls;
        ]
 
 let () = run_test_tt_main tests

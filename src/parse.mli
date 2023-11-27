@@ -1,7 +1,7 @@
 open Ast
 open Lex
 
-val convert : string -> expression
+val literal : string -> expression
 val find_closure : token list -> token list * token list
 val _parse_expression : token list -> expression * token list
 val parse_expression : token list -> expression * token list

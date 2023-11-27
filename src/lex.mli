@@ -1,6 +1,6 @@
 (* All tokens! *)
 type token =
-  (* Building blocks *)
+  (* Expressions *)
   | Value of string
   | Bop of string
   | Uop of string
@@ -19,15 +19,15 @@ type token =
   | If
   | Elif
   | Else
-  (* Semantics *)
+  (* Scoping *)
   | Lparen
   | Rparen
   | Comma
   | Colon
   | Indent
   | Dedent
-  (* End of every line *)
   | Newline
+[@@deriving equal]
 
 val strip_indent : string -> string * int
 val split_and_process : string -> string list
