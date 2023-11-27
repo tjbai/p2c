@@ -3,6 +3,8 @@ open Core
 open Lex
 
 type ('a, 'b) union = A of 'a | B of 'b
+type expr = expression * token list
+type stmt = statement * token list
 
 (* s -> IntLiteral | StringLiteral | BooleanLiteral | Identifier *)
 let literal (s : string) : expression =
@@ -63,7 +65,8 @@ let find_closure (ts : token list) : token list * token list =
   in
   aux [] ts 1
 
-let split_on (ts : token list) (t : token) : token list list =
+(* Split a list of tokens on a given delimiter *)
+let split_on (t : token) (ts : token list) : token list list =
   let rec aux (ts : token list) (cur : token list) (all : token list list) =
     match (ts, cur) with
     | [], [] -> all |> List.rev
@@ -74,28 +77,28 @@ let split_on (ts : token list) (t : token) : token list list =
   in
   aux ts [] []
 
-(* Get arguments passed to a function *)
-let parse_arguments (ts : token list) : expression list =
-  match ts with _ -> []
+let rec parse_fn_call (fn : string) (tl : token list) : expr =
+  let rec parse_arguments tl (acc : expression list) : expression list =
+    match tl with Rparen :: _ -> List.rev acc | _ -> []
+  in
+
+  let args, tl = find_closure tl in
+  let arguments = parse_arguments args [] in
+  ( (match map_fn fn with
+    | A name -> CoreFunctionCall { name; arguments }
+    | B name -> FunctionCall { name; arguments }),
+    tl )
 
 (* This version of parse_expression implements the
    shunting-yard algorithm to properly handle operator precedence *)
 (* NOTE: Refactor for readability *)
-let rec parse_expression (ts : token list) : expression * token list =
-  (* Figure out if this is a core or user-defined function *)
-  let to_fn fn_name args : expression =
-    let arguments = parse_arguments args in
-    match map_fn fn_name with
-    | A name -> CoreFunctionCall { name; arguments }
-    | B name -> FunctionCall { name; arguments }
-  in
-
+let rec parse_expression (ts : token list) : expr =
   let rec aux ts (es : expression list) (ops : binaryOp list) =
     match ts with
     (* function *)
-    | Value fn_name :: Lparen :: tl ->
-        let args, tl = find_closure tl in
-        aux tl (to_fn fn_name args :: es) ops
+    | Value fn :: Lparen :: tl ->
+        let fn_call, tl = parse_fn_call fn tl in
+        aux tl (fn_call :: es) ops
     (* parentheses *)
     | Lparen :: tl ->
         let inside, tl = find_closure tl in
@@ -133,7 +136,7 @@ let rec parse_expression (ts : token list) : expression * token list =
   | _ -> aux ts [] []
 
 (* DEPRECATED: Naive parse expression implementation *)
-let rec _parse_expression (ts : token list) : expression * token list =
+let rec _parse_expression (ts : token list) : expr =
   match ts with
   (* name = tl *)
   | Value name :: Assign :: tl ->
@@ -170,8 +173,7 @@ let rec _parse_expression (ts : token list) : expression * token list =
   | _ -> failwith "malformed %s"
 
 (* Parse a complete statement from tokens *)
-let parse_statement (ts : token list) : statement * token list =
-  match ts with _ -> (Break, [])
+let parse_statement (ts : token list) : stmt = match ts with _ -> (Break, [])
 
 let parse (tokens : token list) : ast =
   let rec aux (t : token list) (acc : ast) : ast * token list =
