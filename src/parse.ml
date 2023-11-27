@@ -6,7 +6,7 @@ type ('a, 'b) union = A of 'a | B of 'b
 type expr = expression * token list
 type stmt = statement * token list
 
-(* s -> IntLiteral | StringLiteral | BooleanLiteral | Identifier *)
+(* Value s -> IntLiteral | StringLiteral | BooleanLiteral | Identifier *)
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
   | "False", _ -> BooleanLiteral false
@@ -37,7 +37,7 @@ let map_bop (s : string) : binaryOp =
   | ">=" -> Gte
   | _ -> failwith "invalid binary op"
 
-(* s -> CoreFunction s | Function s *)
+(* Value s -> coreIdentifier | string *)
 let map_fn (s : string) : (coreIdentifier, string) union =
   match s with
   | "print" -> A Print
@@ -95,7 +95,8 @@ let rec parse_fn_call (fn : string) (tl : token list) : expr =
     tl )
 
 (* This version of parse_expression implements the
-   shunting-yard algorithm to properly handle operator precedence *)
+    shunting-yard algorithm to properly handle
+   operator precedence *)
 (* NOTE: Refactor for readability *)
 and parse_expression (ts : token list) : expr =
   let rec aux ts (es : expression list) (ops : binaryOp list) =
@@ -140,7 +141,26 @@ and parse_expression (ts : token list) : expr =
       (Assignment { name; t = Unknown; value }, tl)
   | _ -> aux ts [] []
 
-(* DEPRECATED: Naive parse expression implementation *)
+(* Parse a complete statement from tokens *)
+let parse_statement (ts : token list) : stmt = match ts with _ -> (Break, [])
+
+let parse (tokens : token list) : ast =
+  let rec aux (t : token list) (acc : ast) : ast * token list =
+    match t with
+    (* Out of tokens, return acc *)
+    | [] -> (List.rev acc, [])
+    (* Skip empty lines *)
+    | Newline :: tl -> aux tl acc
+    | _ -> (
+        match parse_statement t with
+        | new_statement, tl -> aux tl (new_statement :: acc))
+  in
+  match aux tokens [] with ast, _ -> ast
+
+let infer_types (ast : ast) : ast = ast
+
+(* DEPRECATED: Naive parse implementation that
+    doesn't consider operator precedence *)
 let rec _parse_expression (ts : token list) : expr =
   match ts with
   (* name = tl *)
@@ -159,7 +179,14 @@ let rec _parse_expression (ts : token list) : expr =
       let right, tl = _parse_expression tl in
       (BinaryOp { operator; left; right }, tl)
   (* fn(expression) tl *)
-  | Value _ :: Lparen :: _ -> failwith "incomplete"
+  | Value fn :: Lparen :: tl -> (
+      let fn_call, tl = parse_fn_call fn tl in
+      match tl with
+      | Bop op :: tl' ->
+          let operator = map_bop op in
+          let right, tl' = _parse_expression tl' in
+          (BinaryOp { operator; left = fn_call; right }, tl')
+      | _ -> (fn_call, tl))
   (* (expression) tl *)
   | Lparen :: tl -> (
       let closure, tl = find_closure tl in
@@ -176,21 +203,3 @@ let rec _parse_expression (ts : token list) : expr =
   | Value s :: tl -> (literal s, tl)
   | [] -> failwith "tried to parse empty expression"
   | _ -> failwith "malformed %s"
-
-(* Parse a complete statement from tokens *)
-let parse_statement (ts : token list) : stmt = match ts with _ -> (Break, [])
-
-let parse (tokens : token list) : ast =
-  let rec aux (t : token list) (acc : ast) : ast * token list =
-    match t with
-    (* Out of tokens, return acc *)
-    | [] -> (List.rev acc, [])
-    (* Skip empty lines *)
-    | Newline :: tl -> aux tl acc
-    | _ -> (
-        match parse_statement t with
-        | new_statement, tl -> aux tl (new_statement :: acc))
-  in
-  match aux tokens [] with ast, _ -> ast
-
-let infer_types (ast : ast) : ast = ast

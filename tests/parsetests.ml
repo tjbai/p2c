@@ -185,6 +185,19 @@ let test_function_calls _ =
   @@ toe "foo(a,b)";
 
   assert_equal
+    (FunctionCall
+       {
+         name = "foo";
+         arguments =
+           [
+             BinaryOp
+               { operator = Add; left = Identifier "a"; right = Identifier "b" };
+             Identifier "c";
+           ];
+       })
+  @@ toe "foo(a+b, c)";
+
+  assert_equal
     (BinaryOp
        {
          operator = Add;
