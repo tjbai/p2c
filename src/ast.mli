@@ -1,6 +1,6 @@
 type primitive = Int | String | Boolean | Unknown (* primitive types *)
 type identifier = string (* variable identifier, just a string *)
-type coreIdentifier = Print | Input (* core functions *)
+type coreIdentifier = Print | Input | Range (* core functions *)
 
 (* binary operations *)
 type binaryOp =

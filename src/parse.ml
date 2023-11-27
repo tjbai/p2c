@@ -8,9 +8,13 @@ open Lex
 let convert (t : token) : expression =
   match t with
   | Value s -> (
-      match s with
-      | _ when Char.(s.[0] = '\"' || s.[0] = '\'') -> StringLiteral ""
-      | _ -> IntLiteral 0)
+      match (s, int_of_string_opt s) with
+      | "False", _ -> BooleanLiteral false
+      | "True", _ -> BooleanLiteral true
+      | _ when Char.(s.[0] = '\"' || s.[0] = '\'') ->
+          StringLiteral (String.sub s ~pos:1 ~len:(String.length s - 2))
+      | _, Some n -> IntLiteral n
+      | _, None -> Identifier s)
   | _ -> failwith "can only convert Value type"
 
 (* Uop s -> Not | ... *)
@@ -18,7 +22,7 @@ let match_uop (s : string) : unaryOp =
   match s with "not" -> Not | _ -> failwith "invalid unary op"
 
 (* Bop s -> Add | Subtract | ... *)
-let match_bop (s : string) : binaryOp =
+let _match_bop (s : string) : binaryOp =
   match s with
   | "+" -> Add
   | "-" -> Subtract
@@ -40,7 +44,8 @@ let rec parse_expression (ts : token list) : expression * token list =
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       (Assignment { name; t = Unknown; value }, tl)
-  | Value _ :: _ -> failwith "incomplete"
+  | Value _ :: Bop _ :: _ -> failwith "incomplete"
+  | Value _ :: Lparen :: _ -> failwith "incomplete"
   | Uop op :: tl ->
       let operator = match_uop op in
       let operand, tl = parse_expression tl in
