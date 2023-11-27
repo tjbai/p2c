@@ -128,8 +128,60 @@ let test_nested_expressions _ =
        })
   @@ toe "not (((a+10)))"
 
-let test_operator_precedence _ = assert_equal 0 0
-let test_function_calls _ = assert_equal 0 0
+let test_operator_precedence _ =
+  assert_equal
+    (BinaryOp
+       {
+         operator = Multiply;
+         left =
+           BinaryOp
+             { operator = Add; left = Identifier "a"; right = Identifier "b" };
+         right = Identifier "c";
+       })
+  @@ toe "(a+b)*c"
+
+let test_function_calls _ =
+  assert_equal
+    (FunctionCall
+       { name = "foo"; arguments = [ Identifier "a"; Identifier "b" ] })
+  @@ toe "foo(a,b)";
+
+  assert_equal
+    (BinaryOp
+       {
+         operator = Add;
+         left = IntLiteral 10;
+         right =
+           FunctionCall
+             {
+               name = "foo";
+               arguments = [ IntLiteral 2; StringLiteral "test" ];
+             };
+       })
+  @@ toe "10 + foo(2, \'test\')";
+
+  assert_equal
+    (FunctionCall
+       {
+         name = "a";
+         arguments =
+           [
+             FunctionCall
+               {
+                 name = "b";
+                 arguments =
+                   [
+                     FunctionCall
+                       { name = "c"; arguments = [ BooleanLiteral true ] };
+                   ];
+               };
+           ];
+       })
+  @@ toe "a(b(c(True)))";
+
+  assert_equal
+    (CoreFunctionCall { name = Print; arguments = [ Identifier "some_var" ] })
+  @@ toe "print(some_var)"
 
 let tests =
   "Parse tests"

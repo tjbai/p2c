@@ -27,9 +27,11 @@ type token =
   | Indent
   | Dedent
   | Newline
-[@@deriving equal]
+[@@deriving equal, sexp]
 
 val strip_indent : string -> string * int
 val split_and_process : string -> string list
 val tokenize_line : string list -> token list
 val tokenize : string -> token list
+val show_token : token -> string
+val show_tokens : token list -> string

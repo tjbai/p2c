@@ -78,8 +78,13 @@ let split_on (t : token) (ts : token list) : token list list =
   aux ts [] []
 
 let rec parse_fn_call (fn : string) (tl : token list) : expr =
-  let rec parse_arguments tl (acc : expression list) : expression list =
-    match tl with Rparen :: _ -> List.rev acc | _ -> []
+  let rec parse_arguments tl (args : expression list) : expression list =
+    match tl with
+    | [] -> List.rev args
+    | Comma :: tl -> parse_arguments tl args
+    | _ ->
+        let arg, tl = parse_expression tl in
+        parse_arguments tl (arg :: args)
   in
 
   let args, tl = find_closure tl in
@@ -92,7 +97,7 @@ let rec parse_fn_call (fn : string) (tl : token list) : expr =
 (* This version of parse_expression implements the
    shunting-yard algorithm to properly handle operator precedence *)
 (* NOTE: Refactor for readability *)
-let rec parse_expression (ts : token list) : expr =
+and parse_expression (ts : token list) : expr =
   let rec aux ts (es : expression list) (ops : binaryOp list) =
     match ts with
     (* function *)

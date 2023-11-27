@@ -24,7 +24,7 @@ type token =
   | Indent
   | Dedent
   | Newline
-[@@deriving equal]
+[@@deriving equal, sexp]
 
 (* Constants *)
 let whitespace = [ ' '; '\t'; '\n' ]
@@ -133,3 +133,8 @@ let tokenize (file : string) : token list =
   match file |> String.split_lines |> List.fold ~init ~f with
   | t, indent when indent > 0 -> t @ [ Dedent ]
   | t, _ -> t
+
+let show_token (t : token) : string =
+  t |> sexp_of_token |> Sexplib.Sexp.to_string
+
+let show_tokens (ts : token list) : string = ts |> List.to_string ~f:show_token
