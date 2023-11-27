@@ -132,6 +132,44 @@ let test_operator_precedence _ =
   assert_equal
     (BinaryOp
        {
+         operator = Equal;
+         left =
+           BinaryOp
+             { operator = Add; left = Identifier "a"; right = Identifier "b" };
+         right =
+           BinaryOp
+             {
+               operator = Multiply;
+               left = Identifier "c";
+               right = Identifier "d";
+             };
+       })
+  @@ toe "a+b == c*d";
+
+  assert_equal
+    (BinaryOp
+       {
+         operator = Subtract;
+         left =
+           BinaryOp
+             {
+               operator = Add;
+               left = Identifier "a";
+               right =
+                 BinaryOp
+                   {
+                     operator = Multiply;
+                     left = Identifier "b";
+                     right = Identifier "c";
+                   };
+             };
+         right = Identifier "d";
+       })
+  @@ toe "a+b*c-d";
+
+  assert_equal
+    (BinaryOp
+       {
          operator = Multiply;
          left =
            BinaryOp

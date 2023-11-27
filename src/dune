@@ -15,7 +15,9 @@
 (library
  (name parse)
  (modules parse)
- (libraries core ast lex))
+ (libraries core ast lex)
+ (preprocess
+  (pps bisect_ppx)))
 
 (library
  (name codegen)
