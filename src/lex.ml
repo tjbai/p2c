@@ -72,8 +72,7 @@ let split_and_process (s : string) : string list =
   let rec join (acc : string list) (l : string list) =
     match l with
     | [] -> List.rev acc
-    | x :: y :: tl when String.( = ) x "-" && String.( = ) y ">" ->
-        join ("->" :: acc) tl
+    | x :: y :: tl when String.(x = "-" && y = ">") -> join ("->" :: acc) tl
     | hd :: tl -> join (hd :: acc) tl
   in
 
