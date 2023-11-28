@@ -18,6 +18,13 @@ end
 *)
 
 module ConModule : CodeGen = struct
+  (*Helper functions*)
+  let checkIfSubAdd binaryOp =
+    match binaryOp with
+    | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
+        match op with Ast.Add -> true | Ast.Subtract -> true | _ -> false)
+    | _ -> false
+
   (*RETURN - e.g. return a + b*)
   let returnExpression (input : string) : string = "return " ^ input
 
@@ -34,8 +41,23 @@ module ConModule : CodeGen = struct
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
-          | Ast.Add -> "(" ^ mainHelper left ^ ")+(" ^ mainHelper right ^ ")"
-          | _ -> "none")
+          | Ast.Add -> mainHelper left ^ " + " ^ mainHelper right
+          | Ast.Multiply -> (
+              match (checkIfSubAdd left, checkIfSubAdd right) with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") * (" ^ mainHelper right ^ ")"
+              | true, false -> "(" ^ mainHelper left ^ ") * " ^ mainHelper right
+              | false, true -> mainHelper left ^ " * (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " * " ^ mainHelper right)
+          | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
+          | Ast.Divide -> (
+              match (checkIfSubAdd left, checkIfSubAdd right) with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") / (" ^ mainHelper right ^ ")"
+              | true, false -> "(" ^ mainHelper left ^ ") / " ^ mainHelper right
+              | false, true -> mainHelper left ^ " / (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " / " ^ mainHelper right)
+          | _ -> failwith "Catastrophic Error")
       (*(*Unary Operations*)
         | Ast.UnaryOp { operator = op; operand = exp } -> "TODO"
         (*Functional Calls*)
