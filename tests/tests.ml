@@ -2,15 +2,7 @@ open Ast
 open Codegen
 open OUnit2
 
-(*Sample Tree to Test - a+b
-  let adding_1 =
-    [
-      Ast.Expression
-        (BinaryOp
-           { operator = Add; left = Identifier "a"; right = Identifier "b" });
-    ]
-*)
-
+(***************************** Expression tests **************************************)
 let additionOnly =
   [
     Ast.Expression
@@ -184,7 +176,6 @@ let multDivAddSub =
          });
   ]
 
-(*Expression tests*)
 let expression_1 _ =
   assert_equal "a + b + c + d;" @@ ConModule.convertToString additionOnly;
   assert_equal "(a + b) * (c + d);" @@ ConModule.convertToString addMult_1;
@@ -208,8 +199,100 @@ let assignment_1 _ =
 
 let return_eg_1 = [ Ast.Return (IntLiteral 5) ]
 
+let returnComplex =
+  [
+    Ast.Return
+      (FunctionCall
+         {
+           name = "foo";
+           arguments =
+             [
+               StringLiteral "hello";
+               IntLiteral 5;
+               FunctionCall
+                 {
+                   name = "bar";
+                   arguments = [ BooleanLiteral true; StringLiteral "Cat" ];
+                 };
+             ];
+         });
+  ]
+
 let return_1 _ =
-  assert_equal "return 5;" @@ ConModule.convertToString return_eg_1
+  assert_equal "return 5;" @@ ConModule.convertToString return_eg_1;
+  assert_equal "return foo(\"hello\", 5, bar(True, \"Cat\"));"
+  @@ ConModule.convertToString returnComplex
+
+(***************************** Function Call Tests ***********************************)
+
+let functionCall_eg_1 =
+  [
+    Ast.Expression
+      (FunctionCall
+         { name = "foo"; arguments = [ StringLiteral "hello"; IntLiteral 5 ] });
+  ]
+
+let functionCall_embeddedFunc =
+  [
+    Ast.Expression
+      (FunctionCall
+         {
+           name = "foo";
+           arguments =
+             [
+               StringLiteral "hello";
+               IntLiteral 5;
+               FunctionCall
+                 {
+                   name = "bar";
+                   arguments = [ BooleanLiteral true; StringLiteral "Cat" ];
+                 };
+             ];
+         });
+  ]
+
+let functionCall_1 _ =
+  assert_equal "foo(\"hello\", 5);"
+  @@ ConModule.convertToString functionCall_eg_1;
+  assert_equal "foo(\"hello\", 5, bar(True, \"Cat\"));"
+  @@ ConModule.convertToString functionCall_embeddedFunc
+
+(***************************** Core Functions      ***********************************)
+
+let coreFunc_1 =
+  [
+    Ast.Expression
+      (CoreFunctionCall
+         {
+           name = Ast.Print;
+           arguments = [ StringLiteral "hello"; IntLiteral 5 ];
+         });
+  ]
+
+let coreFuncComplex =
+  [
+    Ast.Expression
+      (CoreFunctionCall
+         {
+           name = Ast.Print;
+           arguments =
+             [
+               StringLiteral "hello";
+               IntLiteral 5;
+               FunctionCall
+                 {
+                   name = "bar";
+                   arguments = [ BooleanLiteral true; StringLiteral "Cat" ];
+                 };
+             ];
+         });
+  ]
+
+let coreFuncTests _ =
+  assert_equal "printf( %s %d, \"hello\", 5);"
+  @@ ConModule.convertToString coreFunc_1;
+  assert_equal "printf( %s %d %s, \"hello\", 5, bar(True, \"Cat\"));"
+  @@ ConModule.convertToString coreFuncComplex
 
 (***************************** UTIL **************************************************)
 
@@ -220,6 +303,8 @@ let codeGenTests =
          "assignment tests" >:: assignment_1;
          "return tests" >:: return_1;
          "expression_1" >:: expression_1;
+         "function call tests" >:: functionCall_1;
+         "core function tests" >:: coreFuncTests;
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]
