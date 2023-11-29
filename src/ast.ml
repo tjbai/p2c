@@ -38,15 +38,16 @@ type statement =
   | Expression of expression
   | Function of {
       name : string;
-      arguments : (identifier * primitive) list;
-      returnType : primitive;
+      parameters : (string * primitive) list;
+      return : primitive;
       body : statement list;
     }
   | Return of expression
   | For of {
-      value : identifier;
+      value : string;
+      lower : int;
+      upper : int; (* exclusive upper bound *)
       increment : int;
-      target : int; (* exclusive upper bound *)
       body : statement list;
     }
   | While of { test : expression; body : statement list }
