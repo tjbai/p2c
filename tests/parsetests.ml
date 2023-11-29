@@ -3,6 +3,14 @@ open Ast
 open Lex
 open Parse
 
+(* string -> expression *)
+let toe (s : string) : expression =
+  match s |> tokenize |> parse_expression with e, _ -> e
+
+(* string -> statement *)
+let tos (s : string) : statement =
+  match s |> tokenize |> parse_statement with s, _ -> s
+
 let test_convert _ =
   assert_equal (IntLiteral 0) @@ literal "0";
   assert_equal (IntLiteral 100) @@ literal "100";
@@ -12,13 +20,15 @@ let test_convert _ =
   assert_equal (BooleanLiteral true) @@ literal "True"
 
 let test_finding_closure _ =
+  let find_rparen = find_closure ~l:Lparen ~r:Rparen in
+
   assert_equal
     ([ Value "a"; Bop "+"; Value "b" ], [ Newline ])
-    ("a+b)" |> tokenize |> find_closure);
+    ("a+b)" |> tokenize |> find_rparen);
 
   assert_equal
     ([ Lparen; Value "a"; Bop "+"; Value "b"; Rparen ], [ Newline ])
-    ("(a+b))" |> tokenize |> find_closure);
+    ("(a+b))" |> tokenize |> find_rparen);
 
   assert_equal
     ( [
@@ -39,11 +49,7 @@ let test_finding_closure _ =
         Rparen;
       ],
       [ Bop "+"; Value "f"; Newline ] )
-    ("(a+(b+c)) + (d+e)) + f" |> tokenize |> find_closure)
-
-(* string -> expression *)
-let toe (s : string) : expression =
-  match s |> tokenize |> parse_expression with e, _ -> e
+    ("(a+(b+c)) + (d+e)) + f" |> tokenize |> find_rparen)
 
 let test_simple_expressions _ =
   assert_equal (UnaryOp { operator = Not; operand = Identifier "b" })
@@ -234,6 +240,17 @@ let test_function_calls _ =
     (CoreFunctionCall { name = Print; arguments = [ Identifier "some_var" ] })
   @@ toe "print(some_var)"
 
+let test_function_def _ =
+  assert_equal
+    (Function
+       {
+         name = "foo";
+         parameters = [ ("a", Int); ("b", Int) ];
+         return = Int;
+         body = [];
+       })
+  @@ tos "def foo(a: int, b: int) -> int:"
+
 let tests =
   "Parse tests"
   >: test_list
@@ -244,6 +261,7 @@ let tests =
          "Nested expressions" >:: test_nested_expressions;
          "Operator precedence" >:: test_operator_precedence;
          "Function calls" >:: test_function_calls;
+         "Function definitions" >:: test_function_def;
        ]
 
 let () = run_test_tt_main tests

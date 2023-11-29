@@ -51,7 +51,7 @@ let slice (s : string) (l : int) (r : int) : string =
 (* Count and remove leading tabs *)
 let strip_indent (s : string) : string * int =
   let rec aux (rem : string) (i : int) =
-    if String.length rem > 0 && Char.( = ) rem.[0] '\t' then
+    if String.length rem > 0 && Char.(rem.[0] = '\t') then
       aux (slice_front rem 1) (i + 1)
     else (rem, i)
   in

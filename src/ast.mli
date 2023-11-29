@@ -1,4 +1,4 @@
-type primitive = Int | String | Boolean | Unknown (* primitive types *)
+type primitive = Int | String | Boolean | Void | Unknown (* primitive types *)
 type coreIdentifier = Print | Input | Range (* core functions *)
 
 (* binary operations *)

@@ -2,11 +2,13 @@ open Ast
 open Core
 open Lex
 
+[@@@warning "-27"]
+[@@@warning "-32"]
+
 type ('a, 'b) union = A of 'a | B of 'b
 type e_context = expression * token list
 type s_context = statement * token list
 
-(* Value s -> IntLiteral | StringLiteral | BooleanLiteral | Identifier *)
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
   | "False", _ -> BooleanLiteral false
@@ -16,11 +18,9 @@ let literal (s : string) : expression =
   | _, Some n -> IntLiteral n
   | _, None -> Identifier s
 
-(* Uop s -> Not | ... *)
 let map_uop (s : string) : unaryOp =
   match s with "not" -> Not | _ -> failwith "invalid unary op"
 
-(* Bop s -> Add | Subtract | ... *)
 let map_bop (s : string) : binaryOp =
   match s with
   | "+" -> Add
@@ -37,13 +37,19 @@ let map_bop (s : string) : binaryOp =
   | ">=" -> Gte
   | _ -> failwith "invalid binary op"
 
-(* Value s -> coreIdentifier | string *)
 let map_fn (s : string) : (coreIdentifier, string) union =
   match s with
   | "print" -> A Print
   | "input" -> A Input
   | "range" -> A Range
   | _ -> B s
+
+let map_t (t : token) : primitive =
+  match t with
+  | IntDef -> Int
+  | StringDef -> String
+  | BoolDef -> Boolean
+  | _ -> Unknown
 
 (* Operator precedence *)
 let prec (op : binaryOp) : int =
@@ -53,17 +59,20 @@ let prec (op : binaryOp) : int =
   | Add | Subtract -> 2
   | Multiply | Divide -> 3
 
-(* Look for a closing Rparen *)
-let find_closure (ts : token list) : token list * token list =
-  let rec aux acc ts (need : int) =
-    match ts with
+let find_closure (ts : token list) ~(l : token) ~(r : token) :
+    token list * token list =
+  let rec aux acc tl (need : int) =
+    match tl with
     | [] -> failwith "could not find closure..."
-    | Rparen :: tl when need = 1 -> (List.rev acc, tl)
-    | Rparen :: tl -> aux (Rparen :: acc) tl (need - 1)
-    | Lparen :: tl -> aux (Lparen :: acc) tl (need + 1)
+    | hd :: tl when equal_token hd r && need = 1 -> (List.rev acc, tl)
+    | hd :: tl when equal_token hd r -> aux (r :: acc) tl (need - 1)
+    | hd :: tl when equal_token hd l -> aux (l :: acc) tl (need + 1)
     | hd :: tl -> aux (hd :: acc) tl need
   in
   aux [] ts 1
+
+let find_rparen = find_closure ~l:Lparen ~r:Rparen
+let find_dedent = find_closure ~l:Indent ~r:Dedent
 
 (* Split a list of tokens on a given delimiter *)
 let split_on (t : token) (ts : token list) : token list list =
@@ -87,7 +96,7 @@ let rec parse_fn_call (fn : string) (tl : token list) : e_context =
         parse_arguments tl (arg :: args)
   in
 
-  let args, tl = find_closure tl in
+  let args, tl = find_rparen tl in
   let arguments = parse_arguments args [] in
   ( (match map_fn fn with
     | A name -> CoreFunctionCall { name; arguments }
@@ -107,7 +116,7 @@ and parse_expression (ts : token list) : e_context =
         aux tl (fn_call :: es) ops
     (* parentheses *)
     | Lparen :: tl ->
-        let inside, tl = find_closure tl in
+        let inside, tl = find_rparen tl in
         let e, _ = parse_expression inside in
         aux tl (e :: es) ops
     (* unary op *)
@@ -130,37 +139,69 @@ and parse_expression (ts : token list) : e_context =
         | topop :: remops, right :: left :: remes ->
             aux ts (BinaryOp { operator = topop; left; right } :: remes) remops
         (* Base case *)
-        | _, [ x ] -> (x, ts)
-        | _ -> failwith "something went wrong")
+        | [], [ x ] -> (x, ts)
+        | _ -> failwith "Malformed expression")
   in
 
-  (* Check for assignment *)
   match ts with
+  (* Match against external assignment *)
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       (Assignment { name; t = Unknown; value }, tl)
   | _ -> aux ts [] []
 
+let parse_fn_def (ts : token list) :
+    (string * primitive) list * primitive * token list =
+  let rec aux tl (acc : (string * primitive) list) =
+    match tl with
+    | Rparen :: tl ->
+        (* Parse or infer type *)
+        let t, tl =
+          match tl with Arrow :: t :: tl -> (map_t t, tl) | _ -> (Void, tl)
+        in
+
+        (* Slice the rest of the function def *)
+        let tl =
+          match tl with
+          | Colon :: Newline :: Indent :: tl -> tl
+          | _ -> failwith "malformed function declaration"
+        in
+        (List.rev acc, t, tl)
+    | Comma :: tl -> aux tl acc
+    | Value name :: Colon :: t :: tl -> aux tl ((name, map_t t) :: acc)
+    | _ -> failwith "incomplete"
+  in
+  aux ts []
+
 (* Parse a single statement *)
 let rec parse_statement (ts : token list) : s_context =
   match ts with
-  | FunDef :: tl -> (Break, tl)
+  | FunDef :: Value name :: Lparen :: tl ->
+      let parameters, return, tl = parse_fn_def tl in
+      let body_ts, tl = find_dedent tl in
+      let body, _ = parse body_ts in
+      (Function { name; parameters; body; return }, tl)
   | For :: tl -> (Break, tl)
   | While :: tl -> (Break, tl)
   | (If | Elif | Else) :: tl -> (Break, tl)
-  | _ -> failwith "incomplete"
+  | Lex.Break :: tl -> (Ast.Break, tl)
+  | Lex.Continue :: tl -> (Ast.Continue, tl)
+  | _ ->
+      let expression, tl = parse_expression ts in
+      (Expression expression, tl)
 
 (* Parse a list of statements *)
-and parse (ts : token list) : ast =
-  let rec aux (tl : token list) (acc : ast) : ast * token list =
+and parse (ts : token list) : ast * token list =
+  let rec aux tl (acc : ast) =
     match tl with
     | Newline :: tl -> aux tl acc
     | [] -> (List.rev acc, [])
     | _ ->
-        let new_statement, tl = parse_statement tl in
-        aux tl (new_statement :: acc)
+        let statement, tl = parse_statement tl in
+        aux tl (statement :: acc)
   in
-  match aux ts [] with ast, _ -> ast
+
+  aux ts []
 
 (* DFS to infer assignment types from leaf literals *)
 let infer_types (ast : ast) : ast = ast
@@ -197,7 +238,7 @@ let rec _parse_expression (ts : token list) : e_context =
       | _ -> (fn_call, tl))
   (* (expression) tl *)
   | Lparen :: tl -> (
-      let closure, tl = find_closure tl in
+      let closure, tl = find_rparen tl in
       let left, _ = _parse_expression closure in
       match tl with
       (* (expression) bop tl' *)
