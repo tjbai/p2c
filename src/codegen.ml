@@ -17,6 +17,8 @@ end
     Conitinue
 *)
 
+module Expressions = struct end
+
 module ConModule : CodeGen = struct
   (*HELPER FUNCTIONS*)
 
@@ -68,6 +70,13 @@ module ConModule : CodeGen = struct
   (*converts bool to string - C type*)
   let convertBoolToString bool =
     match bool with true -> "True" | false -> "False"
+
+  let primitiveToString input =
+    match input with
+    | Ast.Int -> "int"
+    | Ast.String -> "string"
+    | Ast.Boolean -> "bool"
+    | _ -> ""
 
   (*CORE FUNCTIONS*)
 
@@ -144,7 +153,16 @@ module ConModule : CodeGen = struct
     in
 
     let result = mainHelper exp in
-    result ^ ";"
+    result ^ ";\n"
+
+  let convertArgsListString (argsList : (Ast.identifier * Ast.primitive) list) :
+      string =
+    let rec helper (argsList : (Ast.identifier * Ast.primitive) list) : string =
+      match argsList with
+      | [] -> ""
+      | (id, prim) :: tl -> id ^ primitiveToString prim ^ ": " ^ helper tl
+    in
+    helper argsList
 
   let convertToString (tree_list : Ast.statement list) : string =
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
@@ -152,8 +170,21 @@ module ConModule : CodeGen = struct
       | [] -> acc
       (*Expression Assignment*)
       | Ast.Expression exp :: tl -> helper tl (convertExpressionToString exp)
+      (*Function Creation*)
+      | Ast.Function
+          { name; arguments = args; returnType = prim; body = stateList }
+        :: tl ->
+          let functionToString =
+            primitiveToString prim ^ name ^ "(" ^ convertArgsListString args
+            ^ "){\n\t" ^ helper stateList "" ^ "\n}"
+          in
+          helper tl functionToString
+      (*Control statements*)
       | Ast.Return exp :: tl ->
-          helper tl (returnExpression (convertExpressionToString exp))
+          helper tl (returnExpression (convertExpressionToString exp)) ^ ";\n"
+      | Ast.Pass :: tl -> helper tl (acc ^ "\treturn;\n")
+      | Ast.Break :: tl -> helper tl (acc ^ "\tbreak;\n")
+      | Ast.Continue :: tl -> helper tl (acc ^ "\tcontinue;\n")
       | _ -> "bob"
     in
     helper tree_list ""

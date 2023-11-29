@@ -177,14 +177,14 @@ let multDivAddSub =
   ]
 
 let expression_1 _ =
-  assert_equal "a + b + c + d;" @@ ConModule.convertToString additionOnly;
-  assert_equal "(a + b) * (c + d);" @@ ConModule.convertToString addMult_1;
-  assert_equal "a * b;" @@ ConModule.convertToString mult_1;
-  assert_equal "(a + b) * b * (c + c * d);"
+  assert_equal "a + b + c + d;\n" @@ ConModule.convertToString additionOnly;
+  assert_equal "(a + b) * (c + d);\n" @@ ConModule.convertToString addMult_1;
+  assert_equal "a * b;\n" @@ ConModule.convertToString mult_1;
+  assert_equal "(a + b) * b * (c + c * d);\n"
   @@ ConModule.convertToString addMult_2;
-  assert_equal "a + b - c + d;" @@ ConModule.convertToString addSubMix;
-  assert_equal "a * b / c / d;" @@ ConModule.convertToString multDiv;
-  assert_equal "a * b / b + c - c / d;"
+  assert_equal "a + b - c + d;\n" @@ ConModule.convertToString addSubMix;
+  assert_equal "a * b / c / d;\n" @@ ConModule.convertToString multDiv;
+  assert_equal "a * b / b + c - c / d;\n"
   @@ ConModule.convertToString multDivAddSub
 
 (***************************** Assignment tests **************************************)
@@ -193,7 +193,7 @@ let assignment_eg_1 =
   [ Ast.Expression (Assignment { name = "a"; value = IntLiteral 5 }) ]
 
 let assignment_1 _ =
-  assert_equal "a = 5;" @@ ConModule.convertToString assignment_eg_1
+  assert_equal "a = 5;\n" @@ ConModule.convertToString assignment_eg_1
 
 (***************************** Return tests ******************************************)
 
@@ -219,8 +219,8 @@ let returnComplex =
   ]
 
 let return_1 _ =
-  assert_equal "return 5;" @@ ConModule.convertToString return_eg_1;
-  assert_equal "return foo(\"hello\", 5, bar(True, \"Cat\"));"
+  assert_equal "\treturn 5;\n" @@ ConModule.convertToString return_eg_1;
+  assert_equal "\treturn foo(\"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString returnComplex
 
 (***************************** Function Call Tests ***********************************)
@@ -252,9 +252,9 @@ let functionCall_embeddedFunc =
   ]
 
 let functionCall_1 _ =
-  assert_equal "foo(\"hello\", 5);"
+  assert_equal "foo(\"hello\", 5);\n"
   @@ ConModule.convertToString functionCall_eg_1;
-  assert_equal "foo(\"hello\", 5, bar(True, \"Cat\"));"
+  assert_equal "foo(\"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString functionCall_embeddedFunc
 
 (***************************** Core Functions      ***********************************)
@@ -289,9 +289,9 @@ let coreFuncComplex =
   ]
 
 let coreFuncTests _ =
-  assert_equal "printf( %s %d, \"hello\", 5);"
+  assert_equal "printf( %s %d, \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
-  assert_equal "printf( %s %d %s, \"hello\", 5, bar(True, \"Cat\"));"
+  assert_equal "printf( %s %d %s, \"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex
 
 (***************************** UTIL **************************************************)
