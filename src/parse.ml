@@ -8,6 +8,7 @@ open Lex
 type ('a, 'b) union = A of 'a | B of 'b
 type e_context = expression * token list
 type s_context = statement * token list
+type params = (string * primitive) list
 
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
@@ -59,15 +60,14 @@ let prec (op : binaryOp) : int =
   | Add | Subtract -> 2
   | Multiply | Divide -> 3
 
-let find_closure (ts : token list) ~(l : token) ~(r : token) :
-    token list * token list =
+let find_closure (ts : token list) ~l ~r : token list * token list =
   let rec aux acc tl (need : int) =
     match tl with
-    | [] -> failwith "could not find closure..."
     | hd :: tl when equal_token hd r && need = 1 -> (List.rev acc, tl)
     | hd :: tl when equal_token hd r -> aux (r :: acc) tl (need - 1)
     | hd :: tl when equal_token hd l -> aux (l :: acc) tl (need + 1)
     | hd :: tl -> aux (hd :: acc) tl need
+    | [] -> failwith "tried to find closure on malformed expression"
   in
   aux [] ts 1
 
@@ -104,9 +104,7 @@ let rec parse_fn_call (fn : string) (tl : token list) : e_context =
     tl )
 
 (* This version of parse_expression implements the
-    shunting-yard algorithm to properly handle
-   operator precedence *)
-(* NOTE: Refactor for readability *)
+    shunting-yard algorithm to properly handle operator precedence *)
 and parse_expression (ts : token list) : e_context =
   let rec aux ts (es : expression list) (ops : binaryOp list) =
     match ts with
@@ -144,34 +142,22 @@ and parse_expression (ts : token list) : e_context =
   in
 
   match ts with
-  (* Match against external assignment *)
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       (Assignment { name; t = Unknown; value }, tl)
   | _ -> aux ts [] []
 
-let parse_fn_def (ts : token list) :
-    (string * primitive) list * primitive * token list =
-  let rec aux tl (acc : (string * primitive) list) =
+(* Parse everything after `def name(` *)
+let parse_fn_def (ts : token list) : params * primitive * token list =
+  let rec aux tl (ps : params) (ret_t : primitive) =
     match tl with
-    | Rparen :: tl ->
-        (* Parse or infer type *)
-        let t, tl =
-          match tl with Arrow :: t :: tl -> (map_t t, tl) | _ -> (Void, tl)
-        in
-
-        (* Slice the rest of the function def *)
-        let tl =
-          match tl with
-          | Colon :: Newline :: Indent :: tl -> tl
-          | _ -> failwith "malformed function declaration"
-        in
-        (List.rev acc, t, tl)
-    | Comma :: tl -> aux tl acc
-    | Value name :: Colon :: t :: tl -> aux tl ((name, map_t t) :: acc)
-    | _ -> failwith "incomplete"
+    | Value name :: Colon :: t :: tl -> aux tl ((name, map_t t) :: ps) ret_t
+    | Colon :: Newline :: Indent :: tl -> (List.rev ps, ret_t, tl)
+    | Arrow :: t :: tl -> aux tl ps (map_t t)
+    | (Comma | Rparen) :: tl -> aux tl ps ret_t
+    | _ -> failwith "malformed function declaration"
   in
-  aux ts []
+  aux ts [] Void
 
 (* Parse a single statement *)
 let rec parse_statement (ts : token list) : s_context =
