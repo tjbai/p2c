@@ -294,6 +294,31 @@ let coreFuncTests _ =
   assert_equal "printf( %s %d %s, \"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex
 
+(***************************** FUNCTIONS *********************************************)
+let function_1 =
+  [
+    Ast.Function
+      {
+        name = "main";
+        arguments = [ ("a", Ast.Int) ];
+        returnType = Ast.Int;
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Divide;
+                   left = Identifier "c";
+                   right = Identifier "d";
+                 });
+          ];
+      };
+  ]
+
+let functionTests _ =
+  assert_equal "int main (int a){\n\tc /d;\n}"
+  @@ ConModule.convertToString function_1
+
 (***************************** UTIL **************************************************)
 
 let codeGenTests =
@@ -305,6 +330,7 @@ let codeGenTests =
          "expression_1" >:: expression_1;
          "function call tests" >:: functionCall_1;
          "core function tests" >:: coreFuncTests;
+         "functions tests" >:: functionTests;
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]

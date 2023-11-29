@@ -17,9 +17,7 @@ end
     Conitinue
 *)
 
-module Expressions = struct end
-
-module ConModule : CodeGen = struct
+module Common = struct
   (*HELPER FUNCTIONS*)
 
   (*check precedence for binary operations*)
@@ -77,14 +75,9 @@ module ConModule : CodeGen = struct
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
     | _ -> ""
+end
 
-  (*CORE FUNCTIONS*)
-
-  (*converts to core function call*)
-
-  (*RETURN - e.g. return a + b*)
-  let returnExpression (input : string) : string = "return " ^ input
-
+module Expressions = struct
   (*CONVERSION of Expression*)
 
   let convertExpressionToString (exp : Ast.expression) : string =
@@ -92,14 +85,15 @@ module ConModule : CodeGen = struct
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
-      | Ast.BooleanLiteral b -> convertBoolToString b
+      | Ast.BooleanLiteral b -> Common.convertBoolToString b
       | Ast.Identifier i -> i
       (*Assignments*)
-      | Ast.Assignment { name = id; value = exp } -> id ^ " = " ^ mainHelper exp
+      | Ast.Assignment { name = id; value = exp; t = varType } ->
+          Common.primitiveToString varType ^ " " ^ id ^ " = " ^ mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           let multDiv left op right =
-            match (checkIfSubAdd left, checkIfSubAdd right) with
+            match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
             | true, true ->
                 "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right
                 ^ ")"
@@ -115,7 +109,14 @@ module ConModule : CodeGen = struct
           | Ast.Multiply -> multDiv left "*" right
           | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
           | Ast.Divide -> multDiv left "/" right
-          | _ -> failwith "Catastrophic Error")
+          | Ast.And -> mainHelper left ^ " && " ^ mainHelper right
+          | Ast.Or -> mainHelper left ^ " || " ^ mainHelper right
+          | Ast.Equal -> mainHelper left ^ " == " ^ mainHelper right
+          | Ast.NotEqual -> mainHelper left ^ " != " ^ mainHelper right
+          | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
+          | Ast.Lte -> mainHelper left ^ " <= " ^ mainHelper right
+          | Ast.Gt -> mainHelper left ^ " > " ^ mainHelper right
+          | Ast.Gte -> mainHelper left ^ " >= " ^ mainHelper right)
       (*Unary Operations*)
       | Ast.UnaryOp { operator = op; operand = exp } -> (
           match op with Ast.Not -> "!(" ^ mainHelper exp ^ ")")
@@ -129,13 +130,13 @@ module ConModule : CodeGen = struct
             match expList with
             | [] -> acc
             | hd :: tl -> (
-                match checkHasInt hd with
+                match Common.checkHasInt hd with
                 | true -> funcToString tl (acc ^ " %d")
                 | false -> (
-                    match checkHasString hd with
+                    match Common.checkHasString hd with
                     | true -> funcToString tl (acc ^ " %s")
                     | false -> (
-                        match checkHasBool hd with
+                        match Common.checkHasBool hd with
                         | true -> funcToString tl (acc ^ " %d")
                         | false -> failwith "Catastrophic Error")))
           in
@@ -149,40 +150,74 @@ module ConModule : CodeGen = struct
           | Input ->
               "scanf(" ^ funcToString expList "" ^ ", "
               ^ String.concat ~sep:",&" args
-              ^ ")")
+              ^ ")"
+          | Range ->
+              if List.length expList = 2 then "5"
+              else if List.length expList = 3 then "8"
+              else "whatever")
     in
 
     let result = mainHelper exp in
-    result ^ ";\n"
+    result
+end
 
-  let convertArgsListString (argsList : (Ast.identifier * Ast.primitive) list) :
-      string =
-    let rec helper (argsList : (Ast.identifier * Ast.primitive) list) : string =
+module ConModule : CodeGen = struct
+  (*CORE FUNCTIONS*)
+
+  (*converts to core function call*)
+
+  (*RETURN - e.g. return a + b*)
+  let returnExpression (input : string) : string = "return " ^ input
+
+  let convertArgsListString (argsList : (string * Ast.primitive) list) : string
+      =
+    let rec helper (argsList : (string * Ast.primitive) list) : string =
       match argsList with
       | [] -> ""
-      | (id, prim) :: tl -> id ^ primitiveToString prim ^ ": " ^ helper tl
+      | (id, prim) :: tl -> Common.primitiveToString prim ^ " " ^ id ^ helper tl
     in
     helper argsList
+
+  let convertForLoopString value lower upper increment =
+    "for(int " ^ value ^ "=" ^ string_of_int lower ^ ";" ^ value ^ "<"
+    ^ string_of_int upper ^ ";" ^ value ^ "=" ^ value ^ "+"
+    ^ string_of_int increment ^ ")"
 
   let convertToString (tree_list : Ast.statement list) : string =
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
       match tree_list with
       | [] -> acc
       (*Expression Assignment*)
-      | Ast.Expression exp :: tl -> helper tl (convertExpressionToString exp)
+      | Ast.Expression exp :: tl ->
+          helper tl (Expressions.convertExpressionToString exp)
       (*Function Creation*)
       | Ast.Function
-          { name; arguments = args; returnType = prim; body = stateList }
+          { name; parameters = args; return = prim; body = stateList }
         :: tl ->
           let functionToString =
-            primitiveToString prim ^ name ^ "(" ^ convertArgsListString args
-            ^ "){\n\t" ^ helper stateList "" ^ "\n}"
+            Common.primitiveToString prim
+            ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n\t"
+            ^ helper stateList ";\n" ^ "}"
           in
           helper tl functionToString
+      (*For Loops*)
+      | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
+        :: tl ->
+          let forLoopStr =
+            convertForLoopString id lower upper inc
+            ^ "{\n\t" ^ helper statelist "" ^ ";\n}"
+          in
+          helper tl forLoopStr
+      (*while Loops*)
+      (*if*)
+      (*else if*)
+      (*else*)
       (*Control statements*)
       | Ast.Return exp :: tl ->
-          helper tl (returnExpression (convertExpressionToString exp)) ^ ";\n"
-      | Ast.Pass :: tl -> helper tl (acc ^ "\treturn;\n")
+          helper tl
+            (returnExpression (Expressions.convertExpressionToString exp))
+          ^ ";\n"
+      | Ast.Pass :: tl -> helper tl (acc ^ "\treturn;")
       | Ast.Break :: tl -> helper tl (acc ^ "\tbreak;\n")
       | Ast.Continue :: tl -> helper tl (acc ^ "\tcontinue;\n")
       | _ -> "bob"
