@@ -170,6 +170,9 @@ let rec parse_statement (ts : token list) : s_context =
   | For :: tl -> (Break, tl)
   | While :: tl -> (Break, tl)
   | (If | Elif | Else) :: tl -> (Break, tl)
+  | Return :: tl ->
+      let expression, tl = parse_expression tl in
+      (Return expression, tl)
   | Lex.Break :: tl -> (Ast.Break, tl)
   | Lex.Continue :: tl -> (Ast.Continue, tl)
   | _ ->

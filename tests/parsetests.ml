@@ -8,8 +8,8 @@ let toe (s : string) : expression =
   match s |> tokenize |> parse_expression with e, _ -> e
 
 (* string -> statement *)
-(* let tos (s : string) : statement =
-   match s |> tokenize |> parse_statement with s, _ -> s *)
+let tos (s : string) : statement =
+  match s |> tokenize |> parse_statement with s, _ -> s
 
 let test_convert _ =
   assert_equal (IntLiteral 0) @@ literal "0";
@@ -240,16 +240,62 @@ let test_function_calls _ =
     (CoreFunctionCall { name = Print; arguments = [ Identifier "some_var" ] })
   @@ toe "print(some_var)"
 
-let test_function_def _ = assert_equal 0 0
-(* assert_equal
-     (Function
-        {
-          name = "foo";
-          parameters = [ ("a", Int); ("b", Int) ];
-          return = Int;
-          body = [];
-        })
-   @@ tos "def foo(a: int, b: int) -> int:" *)
+let test_function_def _ =
+  assert_equal
+    (Ast.Return
+       (BinaryOp
+          { operator = Add; left = Identifier "a"; right = Identifier "b" }))
+  @@ tos "return a + b";
+
+  assert_equal
+    (Function
+       {
+         name = "foo";
+         parameters = [ ("a", Int); ("b", Int) ];
+         return = Int;
+         body =
+           [
+             Return
+               (BinaryOp
+                  {
+                    operator = Add;
+                    left = Identifier "a";
+                    right = Identifier "b";
+                  });
+           ];
+       })
+  @@ tos "def foo(a: int, b: int) -> int:\n\treturn a + b";
+
+  assert_equal
+    (Function
+       {
+         name = "foo";
+         parameters = [ ("a", Int) ];
+         return = Void;
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "a" ] });
+           ];
+       })
+  @@ tos "def foo(a: int):\n\tprint(a)";
+
+  assert_equal
+    (Function
+       {
+         name = "foo";
+         parameters = [ ("a", Int) ];
+         return = Void;
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "a" ] });
+             Return (Identifier "a");
+           ];
+       })
+  @@ tos "def foo(a: int):\n\tprint(a)\n\treturn a"
 
 let tests =
   "Parse tests"
