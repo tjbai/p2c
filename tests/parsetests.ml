@@ -240,7 +240,7 @@ let test_function_calls _ =
     (CoreFunctionCall { name = Print; arguments = [ Identifier "some_var" ] })
   @@ toe "print(some_var)"
 
-let test_function_def _ =
+let test_function_defs _ =
   assert_equal
     (Ast.Return
        (BinaryOp
@@ -297,6 +297,57 @@ let test_function_def _ =
        })
   @@ tos "def foo(a: int):\n\tprint(a)\n\treturn a"
 
+let test_for_loops _ =
+  assert_equal
+    (Ast.For
+       {
+         value = "i";
+         lower = IntLiteral 0;
+         upper = IntLiteral 10;
+         increment = IntLiteral 1;
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+           ];
+       })
+  @@ tos "for i in range(10):\n\tprint(i)";
+
+  assert_equal
+    (Ast.For
+       {
+         value = "i";
+         lower = IntLiteral 1;
+         upper = IntLiteral 10;
+         increment = IntLiteral 1;
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+           ];
+       })
+  @@ tos "for i in range(1, 10):\n\tprint(i)";
+
+  assert_equal
+    (Ast.For
+       {
+         value = "i";
+         lower =
+           BinaryOp
+             { operator = Add; left = Identifier "a"; right = Identifier "b" };
+         upper = IntLiteral 10;
+         increment = IntLiteral 2;
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+           ];
+       })
+  @@ tos "for i in range(a+b, 10, 2):\n\tprint(i)"
+
 let tests =
   "Parse tests"
   >: test_list
@@ -307,7 +358,8 @@ let tests =
          "Nested expressions" >:: test_nested_expressions;
          "Operator precedence" >:: test_operator_precedence;
          "Function calls" >:: test_function_calls;
-         "Function definitions" >:: test_function_def;
+         "Function definitions" >:: test_function_defs;
+         "For loops" >:: test_for_loops;
        ]
 
 let () = run_test_tt_main tests

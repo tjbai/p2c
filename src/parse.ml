@@ -8,7 +8,13 @@ open Lex
 type ('a, 'b) union = A of 'a | B of 'b
 type e_context = expression * token list
 type s_context = statement * token list
+type a_context = ast * token list
 type params = (string * primitive) list
+
+(* For matching against invariants the type system can't catch *)
+let impossible () = failwith "reaching this case should be impossible"
+
+(* TODO: make all failwith messages more descriptive / debuggable *)
 
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
@@ -67,8 +73,9 @@ let find_closure (ts : token list) ~l ~r : token list * token list =
     | hd :: tl when equal_token hd r -> aux (r :: acc) tl (need - 1)
     | hd :: tl when equal_token hd l -> aux (l :: acc) tl (need + 1)
     | hd :: tl -> aux (hd :: acc) tl need
-    | [] -> failwith "tried to find closure on malformed expression"
+    | [] -> failwith "no closure on malformed expression"
   in
+
   aux [] ts 1
 
 let find_rparen = find_closure ~l:Lparen ~r:Rparen
@@ -86,6 +93,7 @@ let split_on (t : token) (ts : token list) : token list list =
   in
   aux ts [] []
 
+(* Parse everything after name(... *)
 let rec parse_fn_call (fn : string) (tl : token list) : e_context =
   let rec parse_arguments tl (args : expression list) : expression list =
     match tl with
@@ -138,7 +146,7 @@ and parse_expression (ts : token list) : e_context =
             aux ts (BinaryOp { operator = topop; left; right } :: remes) remops
         (* Base case *)
         | [], [ x ] -> (x, ts)
-        | _ -> failwith "Malformed expression")
+        | _ -> failwith "malformed expression")
   in
 
   match ts with
@@ -164,10 +172,10 @@ let rec parse_statement (ts : token list) : s_context =
   match ts with
   | FunDef :: Value name :: Lparen :: tl ->
       let parameters, return, tl = parse_fn_def tl in
-      let body_ts, tl = find_dedent tl in
-      let body, _ = parse body_ts in
+      let body, tl = parse_body tl in
       (Function { name; parameters; body; return }, tl)
-  | For :: tl -> (Break, tl)
+  | For :: Value value :: In :: Value "range" :: Lparen :: tl ->
+      parse_for tl value
   | While :: tl -> (Break, tl)
   | (If | Elif | Else) :: tl -> (Break, tl)
   | Return :: tl ->
@@ -180,7 +188,7 @@ let rec parse_statement (ts : token list) : s_context =
       (Expression expression, tl)
 
 (* Parse a list of statements *)
-and parse (ts : token list) : ast * token list =
+and parse (ts : token list) : a_context =
   let rec aux tl (acc : ast) =
     match tl with
     | Newline :: tl -> aux tl acc
@@ -189,55 +197,39 @@ and parse (ts : token list) : ast * token list =
         let statement, tl = parse_statement tl in
         aux tl (statement :: acc)
   in
-
   aux ts []
+
+and parse_body (ts : token list) : a_context =
+  let body_ts, tl = find_dedent ts in
+  match parse body_ts with body, _ -> (body, tl)
+
+(* Parse everything after for _ in range(... *)
+(* NOTE: Find more polymorphic way to parse functions
+   with variable numbers of arguments *)
+and parse_for (ts : token list) (value : string) : s_context =
+  let fn_call, tl = parse_fn_call "range" ts in
+  match tl with
+  | Colon :: Newline :: Indent :: tl -> (
+      let body, tl = parse_body tl in
+      match fn_call with
+      | CoreFunctionCall { name = _; arguments = [ upper ] } ->
+          ( For
+              {
+                value;
+                lower = IntLiteral 0;
+                upper;
+                increment = IntLiteral 1;
+                body;
+              },
+            tl )
+      | CoreFunctionCall { name = _; arguments = [ lower; upper ] } ->
+          (For { value; lower; upper; increment = IntLiteral 1; body }, tl)
+      | CoreFunctionCall { name = _; arguments = [ lower; upper; increment ] }
+        ->
+          (For { value; lower; upper; increment; body }, tl)
+      | CoreFunctionCall _ -> failwith "malformed range call"
+      | _ -> impossible ())
+  | _ -> failwith "malformed for loop"
 
 (* DFS to infer assignment types from leaf literals *)
 let infer_types (ast : ast) : ast = ast
-
-(* DEPRECATED STUFF *)
-
-(* Naive parse implementation that
-    doesn't consider operator precedence *)
-let rec _parse_expression (ts : token list) : e_context =
-  match ts with
-  (* name = tl *)
-  | Value name :: Assign :: tl ->
-      let value, tl = _parse_expression tl in
-      (Assignment { name; t = Unknown; value }, tl)
-  (* op tl *)
-  | Uop op :: tl ->
-      let operator = map_uop op in
-      let operand, tl = _parse_expression tl in
-      (UnaryOp { operator; operand }, tl)
-  (* s op tl *)
-  | Value s :: Bop op :: tl ->
-      let operator = map_bop op in
-      let left = literal s in
-      let right, tl = _parse_expression tl in
-      (BinaryOp { operator; left; right }, tl)
-  (* fn(expression) tl *)
-  | Value fn :: Lparen :: tl -> (
-      let fn_call, tl = parse_fn_call fn tl in
-      match tl with
-      | Bop op :: tl' ->
-          let operator = map_bop op in
-          let right, tl' = _parse_expression tl' in
-          (BinaryOp { operator; left = fn_call; right }, tl')
-      | _ -> (fn_call, tl))
-  (* (expression) tl *)
-  | Lparen :: tl -> (
-      let closure, tl = find_rparen tl in
-      let left, _ = _parse_expression closure in
-      match tl with
-      (* (expression) bop tl' *)
-      | Bop op :: tl' ->
-          let operator = map_bop op in
-          let right, tl' = _parse_expression tl' in
-          (BinaryOp { operator; left; right }, tl')
-      (* (expression) tl *)
-      | _ -> (left, tl))
-  (* base case *)
-  | Value s :: tl -> (literal s, tl)
-  | [] -> failwith "tried to parse empty expression"
-  | _ -> failwith "malformed %s"
