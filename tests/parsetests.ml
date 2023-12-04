@@ -94,6 +94,7 @@ let test_simple_expressions _ =
                left = StringLiteral "hello";
                right = StringLiteral "world";
              };
+         operator = None;
        })
   @@ toe "helloword = \"hello\" + \'world\'"
 
@@ -614,7 +615,8 @@ let test_nested_blocks _ =
               ];
           };
         Expression
-          (Assignment { name = "i"; t = Unknown; value = IntLiteral 0 });
+          (Assignment
+             { name = "i"; t = Unknown; value = IntLiteral 0; operator = None });
         For
           {
             value = "line";
@@ -640,6 +642,7 @@ let test_nested_blocks _ =
                                    arguments = [ Identifier "line" ];
                                  };
                            };
+                       operator = None;
                      });
               ];
           };

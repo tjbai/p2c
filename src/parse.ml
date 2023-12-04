@@ -32,6 +32,7 @@ let map_bop (s : string) : binaryOp =
   | "-" -> Subtract
   | "*" -> Multiply
   | "/" -> Divide
+  | "%" -> Mod
   | "and" -> And
   | "or" -> Or
   | "==" -> Equal
@@ -43,11 +44,7 @@ let map_bop (s : string) : binaryOp =
   | _ -> failwith "invalid binary op"
 
 let map_fn (s : string) : (coreIdentifier, string) union =
-  match s with
-  | "print" -> A Print
-  | "input" -> A Input
-  | "range" -> A Range
-  | _ -> B s
+  match s with "print" -> A Print | "input" -> A Input | _ -> B s
 
 let map_t (t : token) : primitive =
   match t with
@@ -62,7 +59,7 @@ let prec (op : binaryOp) : int =
   | Equal | NotEqual -> 0
   | Lt | Lte | Gt | Gte | And | Or -> 1
   | Add | Subtract -> 2
-  | Multiply | Divide -> 3
+  | Multiply | Divide | Mod -> 3
 
 let find_closure (ts : token list) ~l ~r : token list * token list =
   let rec aux acc tl (need : int) =
@@ -150,7 +147,10 @@ and parse_expression (ts : token list) : e_context =
   match ts with
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
-      (Assignment { name; t = Unknown; value }, tl)
+      (Assignment { name; t = Unknown; value; operator = None }, tl)
+  | Value name :: Bop op :: Assign :: tl ->
+      let value, tl = parse_expression tl in
+      (Assignment { name; t = Unknown; value; operator = Some (map_bop op) }, tl)
   | _ -> aux ts [] []
 
 (* Parse everything after `def name(` *)

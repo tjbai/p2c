@@ -10,6 +10,7 @@ type binaryOp =
   | Subtract
   | Multiply
   | Divide
+  | Mod
   | And
   | Or
   | Equal
