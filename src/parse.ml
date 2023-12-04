@@ -44,11 +44,7 @@ let map_bop (s : string) : binaryOp =
   | _ -> failwith "invalid binary op"
 
 let map_fn (s : string) : (coreIdentifier, string) union =
-  match s with
-  | "print" -> A Print
-  | "input" -> A Input
-  | "range" -> A Range
-  | _ -> B s
+  match s with "print" -> A Print | "input" -> A Input | _ -> B s
 
 let map_t (t : token) : primitive =
   match t with
@@ -93,7 +89,7 @@ let split_on (t : token) (ts : token list) : token list list =
   aux ts [] []
 
 (* Parse everything after name(... *)
-let rec parse_fn_call (fn : string) (tl : token list) : e_context =
+let rec parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
   let rec parse_arguments tl (args : expression list) : expression list =
     match tl with
     | [] -> List.rev args
@@ -117,7 +113,7 @@ and parse_expression (ts : token list) : e_context =
     match ts with
     (* function *)
     | Value fn :: Lparen :: tl ->
-        let fn_call, tl = parse_fn_call fn tl in
+        let fn_call, tl = parse_fn_call ~fn tl in
         aux tl (fn_call :: es) ops
     (* parentheses *)
     | Lparen :: tl ->
@@ -192,12 +188,12 @@ let rec parse_statement (ts : token list) : s_context =
 
 (* Parse everything after for _ in range(... *)
 and parse_for (ts : token list) (value : string) : s_context =
-  let fn_call, tl = parse_fn_call "range" ts in
+  let fn_call, tl = parse_fn_call ts in
   match tl with
   | Colon :: Newline :: Indent :: tl -> (
       let body, tl = parse_body tl in
       match fn_call with
-      | CoreFunctionCall { name = _; arguments = [ upper ] } ->
+      | FunctionCall { name = _; arguments = [ upper ] } ->
           ( For
               {
                 value;
@@ -207,13 +203,11 @@ and parse_for (ts : token list) (value : string) : s_context =
                 body;
               },
             tl )
-      | CoreFunctionCall { name = _; arguments = [ lower; upper ] } ->
+      | FunctionCall { name = _; arguments = [ lower; upper ] } ->
           (For { value; lower; upper; increment = IntLiteral 1; body }, tl)
-      | CoreFunctionCall { name = _; arguments = [ lower; upper; increment ] }
-        ->
+      | FunctionCall { name = _; arguments = [ lower; upper; increment ] } ->
           (For { value; lower; upper; increment; body }, tl)
-      | CoreFunctionCall _ -> failwith "malformed range call"
-      | _ -> impossible ())
+      | _ -> failwith "malformed iterator")
   | _ -> failwith "malformed for loop"
 
 (* Parse everything after while ... *)

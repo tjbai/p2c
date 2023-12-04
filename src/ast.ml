@@ -2,7 +2,7 @@ open Sexplib.Std (* need for string_of_sexp *)
 
 type primitive = Int | String | Boolean | Void | Unknown [@@deriving sexp]
 type identifier = string [@@deriving sexp]
-type coreIdentifier = Print | Input | Range [@@deriving sexp]
+type coreIdentifier = Print | Input [@@deriving sexp]
 
 (* binary operations *)
 type binaryOp =
