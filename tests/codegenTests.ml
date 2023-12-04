@@ -298,6 +298,22 @@ let coreFunc_1 =
 
 let coreFuncComplex =
   [
+    Ast.Function
+      {
+        name = "bar";
+        parameters = [ ("a", Ast.Boolean); ("b", Ast.String) ];
+        return = Ast.Int;
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
     Ast.Expression
       (CoreFunctionCall
          {
@@ -316,9 +332,12 @@ let coreFuncComplex =
   ]
 
 let coreFuncTests _ =
-  assert_equal "printf( %s %d, \"hello\", 5);\n"
+  assert_equal "printf(%s %d , \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
-  assert_equal "printf( %s %d %s, \"hello\", 5, bar(True, \"Cat\"));\n"
+  assert_equal
+    "int bar(bool astring b){\n\
+     \ta + b;\n\
+     }printf(%s %d %d , \"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex
 
 (***************************** FUNCTIONS *********************************************)

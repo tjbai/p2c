@@ -4,6 +4,33 @@ module type CodeGen = sig
   val convertToString : Ast.statement list -> string
 end
 
+(***********************************************************************************************)
+
+module FunctionLookUp = struct
+  let generateMapOfFunctionSignatures (tree_list : Ast.statement list) :
+      (string, Ast.primitive * (string * Ast.primitive) list) Hashtbl.t =
+    let map = Hashtbl.create (module String) in
+    let rec helper (tree_list : Ast.statement list) : unit =
+      match tree_list with
+      | [] -> ()
+      | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
+        ->
+          Hashtbl.add_exn map ~key:name ~data:(prim, args);
+          helper tl
+      | _ :: tl -> helper tl
+    in
+    helper tree_list;
+    map
+
+  let findReturnType (id : string) tree : Ast.primitive =
+    let hashtbl = generateMapOfFunctionSignatures tree in
+    match Hashtbl.find hashtbl id with
+    | Some (prim, _) -> prim
+    | None -> Ast.Void
+end
+
+(***********************************************************************************************)
+
 module Common = struct
   (*HELPER FUNCTIONS*)
 
@@ -12,44 +39,6 @@ module Common = struct
     match binaryOp with
     | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
         match op with Ast.Add -> true | Ast.Subtract -> true | _ -> false)
-    | _ -> false
-
-  (*check if an expression contains an integer*)
-  let rec checkHasInt (exp : Ast.expression) : bool =
-    match exp with
-    | Ast.IntLiteral _ -> true
-    | Ast.BinaryOp { operator = _; left; right } ->
-        checkHasInt left || checkHasInt right
-    | Ast.UnaryOp { operator = _; operand } -> checkHasInt operand
-    | Ast.FunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasInt x)
-    | Ast.CoreFunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasInt x)
-    | _ -> false
-
-  (*checks if an expression contains string*)
-  let rec checkHasString (exp : Ast.expression) : bool =
-    match exp with
-    | Ast.StringLiteral _ -> true
-    | Ast.BinaryOp { operator = _; left; right } ->
-        checkHasString left || checkHasString right
-    | Ast.UnaryOp { operator = _; operand } -> checkHasString operand
-    | Ast.FunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasString x)
-    | Ast.CoreFunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasString x)
-    | _ -> false
-
-  (*checks if an expression contains bool*)
-  let rec checkHasBool (exp : Ast.expression) : bool =
-    match exp with
-    | Ast.BinaryOp { operator = _; left; right } ->
-        checkHasBool left || checkHasBool right
-    | Ast.UnaryOp { operator = _; operand } -> checkHasBool operand
-    | Ast.FunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasBool x)
-    | Ast.CoreFunctionCall { name = _; arguments = expList } ->
-        List.fold expList ~init:false ~f:(fun acc x -> acc || checkHasBool x)
     | _ -> false
 
   (*converts bool to string - C type*)
@@ -79,59 +68,32 @@ module Common = struct
         | Ast.Or -> true
         | _ -> checkIfOrOperatorPresent left || checkIfOrOperatorPresent right)
     | _ -> false
+
+  let getReturnType tree_main expList =
+    let rec helper expList acc =
+      match expList with
+      | [] -> acc
+      | hd :: tl -> (
+          match hd with
+          | Ast.IntLiteral _ -> helper tl (acc ^ "%d ")
+          | Ast.StringLiteral _ -> helper tl (acc ^ "%s ")
+          | Ast.BooleanLiteral _ -> helper tl (acc ^ "%d ")
+          | Ast.FunctionCall { name = id; arguments = _ } -> (
+              match FunctionLookUp.findReturnType id tree_main with
+              | Ast.Int -> helper tl (acc ^ "%d ")
+              | Ast.String -> helper tl (acc ^ "%s ")
+              | Ast.Boolean -> helper tl (acc ^ "%d ")
+              | _ -> failwith "Invalid type")
+          | _ -> helper tl acc)
+    in
+    helper expList ""
 end
 
 module Expressions = struct
   (*CONVERSION of Expression*)
-  let convertExpressionToString (exp : Ast.expression) : string =
-    let rec funcToString expList acc =
-      match expList with
-      | [] -> acc
-      | hd :: tl -> (
-          match Common.checkHasInt hd with
-          | true -> funcToString tl (acc ^ " %d")
-          | false -> (
-              match Common.checkHasString hd with
-              | true -> funcToString tl (acc ^ " %s")
-              | false -> (
-                  match Common.checkHasBool hd with
-                  | true -> funcToString tl (acc ^ " %d")
-                  | false -> failwith "Catastrophic Error")))
-    in
 
-    (*multiplicatoin and division PEMDAS*)
-    let rec multDiv left op right =
-      match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
-      | true, true ->
-          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right ^ ")"
-      | true, false ->
-          "(" ^ mainHelper left ^ ") " ^ op ^ " " ^ mainHelper right
-      | false, true ->
-          mainHelper left ^ " " ^ op ^ " (" ^ mainHelper right ^ ")"
-      | false, false -> mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
-    (*check if or operator is present*)
-    and orPresent left op right =
-      match
-        ( Common.checkIfOrOperatorPresent left,
-          Common.checkIfOrOperatorPresent right )
-      with
-      | true, true ->
-          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right ^ ")"
-      | true, false -> "(" ^ mainHelper left ^ ") " ^ op ^ mainHelper right
-      | false, true -> mainHelper left ^ op ^ " (" ^ mainHelper right ^ ")"
-      | false, false -> mainHelper left ^ " ^op^ " ^ mainHelper right
-    (*check if and operator is present*)
-    and andPresent left op right =
-      match
-        ( Common.checkIfAndOperatorPresent left,
-          Common.checkIfAndOperatorPresent right )
-      with
-      | true, true ->
-          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right ^ ")"
-      | true, false -> "(" ^ mainHelper left ^ ") " ^ op ^ mainHelper right
-      | false, true -> mainHelper left ^ op ^ " (" ^ mainHelper right ^ ")"
-      | false, false -> mainHelper left ^ " ^op^ " ^ mainHelper right
-    and mainHelper (exp : Ast.expression) : string =
+  let convertExpressionToString (exp : Ast.expression) main_tree : string =
+    let rec mainHelper (exp : Ast.expression) : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
@@ -142,13 +104,47 @@ module Expressions = struct
           Common.primitiveToString varType ^ " " ^ id ^ " = " ^ mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
+          let multDiv left op right =
+            match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
+            | true, true ->
+                "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right
+                ^ ")"
+            | true, false ->
+                "(" ^ mainHelper left ^ ") " ^ op ^ " " ^ mainHelper right
+            | false, true ->
+                mainHelper left ^ " " ^ op ^ " (" ^ mainHelper right ^ ")"
+            | false, false ->
+                mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
+          in
           match op with
           | Ast.Add -> mainHelper left ^ " + " ^ mainHelper right
           | Ast.Multiply -> multDiv left "*" right
           | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
           | Ast.Divide -> multDiv left "/" right
-          | Ast.And -> orPresent left "&&" right
-          | Ast.Or -> andPresent left "||" right
+          | Ast.And -> (
+              match
+                ( Common.checkIfOrOperatorPresent left,
+                  Common.checkIfOrOperatorPresent right )
+              with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
+              | true, false ->
+                  "(" ^ mainHelper left ^ ") && " ^ mainHelper right
+              | false, true ->
+                  mainHelper left ^ " && (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " && " ^ mainHelper right)
+          | Ast.Or -> (
+              match
+                ( Common.checkIfAndOperatorPresent left,
+                  Common.checkIfAndOperatorPresent right )
+              with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
+              | true, false ->
+                  "(" ^ mainHelper left ^ ") || " ^ mainHelper right
+              | false, true ->
+                  mainHelper left ^ " || (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " || " ^ mainHelper right)
           | Ast.Equal -> mainHelper left ^ " == " ^ mainHelper right
           | Ast.NotEqual -> mainHelper left ^ " != " ^ mainHelper right
           | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
@@ -167,11 +163,15 @@ module Expressions = struct
           let args = List.map expList ~f:mainHelper in
           match id with
           | Print ->
-              "printf(" ^ funcToString expList "" ^ ", "
+              "printf("
+              ^ Common.getReturnType main_tree expList
+              ^ ", "
               ^ String.concat ~sep:", " args
               ^ ")"
           | Input ->
-              "scanf(" ^ funcToString expList "" ^ ", "
+              "scanf("
+              ^ Common.getReturnType main_tree expList
+              ^ ", "
               ^ String.concat ~sep:",&" args
               ^ ")")
     in
@@ -180,6 +180,7 @@ module Expressions = struct
     result
 end
 
+(***********************************************************************************************)
 module ConModule : CodeGen = struct
   (*CORE FUNCTIONS*)
 
@@ -196,7 +197,6 @@ module ConModule : CodeGen = struct
     in
     helper argsList
 
-  (*produces the number of tabs for pretty printing*)
   let numberOfTabs (num : int) : string =
     let rec helper (num : int) (acc : string) : string =
       match num with 0 -> acc | _ -> helper (num - 1) acc ^ "\t"
@@ -209,104 +209,97 @@ module ConModule : CodeGen = struct
     "for(int " ^ value ^ "=" ^ lower ^ ";" ^ value ^ "<" ^ upper ^ ";" ^ value
     ^ "=" ^ value ^ "+" ^ increment ^ ")"
 
-  (*function to String*)
-  let rec functionToString countTabs prim name stateList args =
-    numberOfTabs countTabs
-    ^ Common.primitiveToString prim
-    ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
-    ^ helper stateList "" (countTabs + 1)
-    ^ "}"
-
-  (*while loops to string*)
-  and whileLoopStr countTabs statelist exp =
-    numberOfTabs countTabs ^ "while("
-    ^ Expressions.convertExpressionToString exp
-    ^ "){\n"
-    ^ helper statelist "" (countTabs + 1)
-    ^ "}"
-
-  (*elif to string*)
-  and elifStr countTabs exp statelist =
-    numberOfTabs countTabs ^ "else if("
-    ^ Expressions.convertExpressionToString exp
-    ^ ") {\n"
-    ^ helper statelist "" (countTabs + 1)
-    ^ "}"
-
-  (*else to string*)
-  and elseStr countTabs statelist =
-    numberOfTabs countTabs ^ "else {\n"
-    ^ helper statelist "" (countTabs + 1)
-    ^ "}"
-
-  (*if to string*)
-  and ifStr countTabs exp statelist =
-    numberOfTabs countTabs ^ "if("
-    ^ Expressions.convertExpressionToString exp
-    ^ "){\n"
-    ^ helper statelist "" (countTabs + 1)
-    ^ "}"
-
-  (*for loop to string*)
-  and forLoopStr countTabs id lower upper inc statelist =
-    numberOfTabs countTabs
-    ^ convertForLoopString id
-        (Expressions.convertExpressionToString lower)
-        (Expressions.convertExpressionToString upper)
-        (Expressions.convertExpressionToString inc)
-    ^ "{\n"
-    ^ helper statelist "" (countTabs + 1)
-    ^ "}"
-
-  and helper (tree_list : Ast.statement list) (acc : string) (countTabs : int) :
-      string =
-    match tree_list with
-    | [] -> acc
-    (*Expression Assignment*)
-    | Ast.Expression exp :: tl ->
-        helper tl
-          (acc ^ numberOfTabs countTabs
-          ^ Expressions.convertExpressionToString exp
-          ^ ";\n")
-          countTabs
-    (*Function Creation*)
-    | Ast.Function { name; parameters = args; return = prim; body = stateList }
-      :: tl ->
-        helper tl
-          (acc ^ functionToString countTabs prim name stateList args)
-          countTabs
-    (*For Loops*)
-    | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
-      :: tl ->
-        helper tl
-          (acc ^ forLoopStr countTabs id lower upper inc statelist)
-          countTabs
-    (*while Loops*)
-    | Ast.While { test = exp; body = statelist } :: tl ->
-        helper tl (acc ^ whileLoopStr countTabs statelist exp) countTabs
-    (*if statements*)
-    | Ast.If { test = exp; body = statelist } :: tl ->
-        helper tl (acc ^ ifStr countTabs exp statelist) countTabs
-    (*else if statements*)
-    | Ast.Elif { test = exp; body = statelist } :: tl ->
-        helper tl (acc ^ elifStr countTabs exp statelist) countTabs
-    (*else statements*)
-    | Ast.Else { body = statelist } :: tl ->
-        helper tl (acc ^ elseStr countTabs statelist) countTabs
-    (*Control statements*)
-    | Ast.Return exp :: tl ->
-        numberOfTabs countTabs
-        ^ helper tl
-            (returnExpression (Expressions.convertExpressionToString exp))
+  let convertToString (main_tree : Ast.statement list) : string =
+    let rec helper (tree_list : Ast.statement list) (acc : string)
+        (countTabs : int) : string =
+      match tree_list with
+      | [] -> acc
+      (*Expression Assignment*)
+      | Ast.Expression exp :: tl ->
+          helper tl
+            (acc ^ numberOfTabs countTabs
+            ^ Expressions.convertExpressionToString exp main_tree
+            ^ ";\n")
             countTabs
-        ^ ";\n"
-    | Ast.Pass :: tl ->
-        numberOfTabs countTabs ^ helper tl (acc ^ "return;") countTabs
-    | Ast.Break :: tl ->
-        numberOfTabs countTabs ^ helper tl (acc ^ "break;\n") countTabs
-    | Ast.Continue :: tl ->
-        numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
+      (*Function Creation*)
+      | Ast.Function
+          { name; parameters = args; return = prim; body = stateList }
+        :: tl ->
+          let functionToString =
+            numberOfTabs countTabs
+            ^ Common.primitiveToString prim
+            ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
+            ^ helper stateList "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ functionToString) countTabs
+      (*For Loops*)
+      | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
+        :: tl ->
+          let forLoopStr =
+            numberOfTabs countTabs
+            ^ convertForLoopString id
+                (Expressions.convertExpressionToString lower main_tree)
+                (Expressions.convertExpressionToString upper main_tree)
+                (Expressions.convertExpressionToString inc main_tree)
+            ^ "{\n"
+            ^ helper statelist "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ forLoopStr) countTabs
+      (*while Loops*)
+      | Ast.While { test = exp; body = statelist } :: tl ->
+          let whileLoopStr =
+            numberOfTabs countTabs ^ "while("
+            ^ Expressions.convertExpressionToString exp main_tree
+            ^ "){\n"
+            ^ helper statelist "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ whileLoopStr) countTabs
+      (*if statements*)
+      | Ast.If { test = exp; body = statelist } :: tl ->
+          let ifStr =
+            numberOfTabs countTabs ^ "if("
+            ^ Expressions.convertExpressionToString exp main_tree
+            ^ "){\n"
+            ^ helper statelist "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ ifStr) countTabs
+      (*else if statements*)
+      | Ast.Elif { test = exp; body = statelist } :: tl ->
+          let elifStr =
+            numberOfTabs countTabs ^ "else if("
+            ^ Expressions.convertExpressionToString exp main_tree
+            ^ ") {\n"
+            ^ helper statelist "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ elifStr) countTabs
+      (*else statements*)
+      | Ast.Else { body = statelist } :: tl ->
+          let elseStr =
+            numberOfTabs countTabs ^ "else {\n"
+            ^ helper statelist "" (countTabs + 1)
+            ^ "}"
+          in
+          helper tl (acc ^ elseStr) countTabs
+      (*Control statements*)
+      | Ast.Return exp :: tl ->
+          numberOfTabs countTabs
+          ^ helper tl
+              (returnExpression
+                 (Expressions.convertExpressionToString exp main_tree))
+              countTabs
+          ^ ";\n"
+      | Ast.Pass :: tl ->
+          numberOfTabs countTabs ^ helper tl (acc ^ "return;") countTabs
+      | Ast.Break :: tl ->
+          numberOfTabs countTabs ^ helper tl (acc ^ "break;\n") countTabs
+      | Ast.Continue :: tl ->
+          numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
+    in
 
-  let convertToString (tree_list : Ast.statement list) : string =
-    helper tree_list "" 0
+    helper main_tree "" 0
 end
