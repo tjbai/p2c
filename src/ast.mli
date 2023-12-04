@@ -1,5 +1,5 @@
 type primitive = Int | String | Boolean | Void | Unknown (* primitive types *)
-type coreIdentifier = Print | Input (* core functions *)
+type coreIdentifier = Print | Input | Range (* core functions *)
 
 (* binary operations *)
 type binaryOp =

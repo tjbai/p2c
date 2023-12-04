@@ -96,7 +96,23 @@ let test_simple_expressions _ =
              };
          operator = None;
        })
-  @@ toe "helloword = \"hello\" + \'world\'"
+  @@ toe "helloword = \"hello\" + \'world\'";
+
+  assert_equal
+    (Assignment
+       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
+  @@ toe "i += 1";
+
+  assert_equal
+    (BinaryOp
+       {
+         operator = Equal;
+         left =
+           BinaryOp
+             { operator = Mod; left = Identifier "i"; right = IntLiteral 2 };
+         right = IntLiteral 0;
+       })
+  @@ toe "i % 2 == 0"
 
 let test_nested_expressions _ =
   assert_equal
