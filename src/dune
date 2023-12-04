@@ -1,9 +1,4 @@
 (library
- (name io)
- (modules io)
- (libraries core))
-
-(library
  (name ast)
  (modules ast)
  (libraries core)
@@ -13,12 +8,16 @@
 (library
  (name lex)
  (modules lex)
- (libraries core ast))
+ (libraries core)
+ (preprocess
+  (pps ppx_jane)))
 
 (library
  (name parse)
  (modules parse)
- (libraries core ast lex))
+ (libraries core ast lex)
+ (preprocess
+  (pps bisect_ppx)))
 
 (library
  (name codegen)

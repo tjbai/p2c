@@ -1,3 +1,19 @@
 (test
+ (name tests)
+ (libraries core ounit2)
+ (modules tests))
+
+(test
+ (name lextests)
+ (libraries core ounit2 lex)
+ (modules lextests))
+
+(test
+ (name parsetests)
+ (libraries core ounit2 parse lex ast)
+ (modules parsetests))
+
+(test
  (name codegenTests)
- (libraries core ounit2 codegen))
+ (libraries core ounit2 codegen)
+ (modules codegenTests))

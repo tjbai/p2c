@@ -4,19 +4,6 @@ module type CodeGen = sig
   val convertToString : Ast.statement list -> string
 end
 
-(*TODO
-    Expressions
-    Functions
-    For Loops
-    While Loops
-    if
-      Elif
-  else
-    Pass
-    Break
-    Conitinue
-*)
-
 module Common = struct
   (*HELPER FUNCTIONS*)
 
@@ -223,10 +210,10 @@ module ConModule : CodeGen = struct
     helper num ""
 
   (*Convert for loop to string*)
-  let convertForLoopString value lower upper increment =
-    "for(int " ^ value ^ "=" ^ string_of_int lower ^ ";" ^ value ^ "<"
-    ^ string_of_int upper ^ ";" ^ value ^ "=" ^ value ^ "+"
-    ^ string_of_int increment ^ ")"
+  let convertForLoopString (value : string) (lower : string) (upper : string)
+      (increment : string) =
+    "for(int " ^ value ^ "=" ^ lower ^ ";" ^ value ^ "<" ^ upper ^ ";" ^ value
+    ^ "=" ^ value ^ "+" ^ increment ^ ")"
 
   let convertToString (tree_list : Ast.statement list) : string =
     let rec helper (tree_list : Ast.statement list) (acc : string)
@@ -257,7 +244,10 @@ module ConModule : CodeGen = struct
         :: tl ->
           let forLoopStr =
             numberOfTabs countTabs
-            ^ convertForLoopString id lower upper inc
+            ^ convertForLoopString id
+                (Expressions.convertExpressionToString lower)
+                (Expressions.convertExpressionToString upper)
+                (Expressions.convertExpressionToString inc)
             ^ "{\n"
             ^ helper statelist "" (countTabs + 1)
             ^ "}"

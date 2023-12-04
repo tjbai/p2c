@@ -1,6 +1,6 @@
 open Sexplib.Std (* need for string_of_sexp *)
 
-type primitive = Int | String | Boolean | Unknown [@@deriving sexp]
+type primitive = Int | String | Boolean | Void | Unknown [@@deriving sexp]
 type identifier = string [@@deriving sexp]
 type coreIdentifier = Print | Input | Range [@@deriving sexp]
 
@@ -45,9 +45,9 @@ type statement =
   | Return of expression
   | For of {
       value : string;
-      lower : int;
-      upper : int; (* exclusive upper bound *)
-      increment : int;
+      lower : expression;
+      upper : expression; (* exclusive upper bound *)
+      increment : expression;
       body : statement list;
     }
   | While of { test : expression; body : statement list }

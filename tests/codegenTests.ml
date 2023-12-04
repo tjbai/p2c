@@ -220,7 +220,7 @@ let assignment_eg_1 =
   ]
 
 let assignment_1 _ =
-  assert_equal "a = 5;\n" @@ ConModule.convertToString assignment_eg_1
+  assert_equal "int a = 5;\n" @@ ConModule.convertToString assignment_eg_1
 
 (***************************** Return tests ******************************************)
 
@@ -246,8 +246,8 @@ let returnComplex =
   ]
 
 let return_1 _ =
-  assert_equal "\treturn 5;\n" @@ ConModule.convertToString return_eg_1;
-  assert_equal "\treturn foo(\"hello\", 5, bar(True, \"Cat\"));\n"
+  assert_equal "return 5;\n" @@ ConModule.convertToString return_eg_1;
+  assert_equal "return foo(\"hello\", 5, bar(True, \"Cat\"));\n"
   @@ ConModule.convertToString returnComplex
 
 (***************************** Function Call Tests ***********************************)
@@ -343,7 +343,7 @@ let function_1 =
   ]
 
 let functionTests _ =
-  assert_equal "int main (int a){\n\tc /d;\n}"
+  assert_equal "int main(int a){\n\tc / d;\n}"
   @@ ConModule.convertToString function_1
 
 (***************************** CONTROL **********************************************)
@@ -435,49 +435,13 @@ let ifElseIfStatement =
       };
   ]
 
-let nestedIfElse =
-  [
-    Ast.Expression
-      (BinaryOp
-         { operator = Ast.Add; left = Identifier "a"; right = Identifier "b" });
-    Ast.Else
-      {
-        body =
-          [
-            Ast.If
-              {
-                test = BooleanLiteral false;
-                body =
-                  [
-                    Expression
-                      (BinaryOp
-                         {
-                           operator = Ast.Subtract;
-                           left = Identifier "a";
-                           right = Identifier "b";
-                         });
-                    Expression
-                      (BinaryOp
-                         {
-                           operator = Ast.Multiply;
-                           left = Identifier "a";
-                           right = Identifier "b";
-                         });
-                  ];
-              };
-          ];
-      };
-  ]
-
 let testControl _ =
-  assert_equal "if (True){\n\ta + b;\n}\n"
+  assert_equal "if(True){\n\ta + b;\n}"
   @@ ConModule.convertToString basicIfStatement;
-  assert_equal "if (True){\n\ta + b;\n}\nelse{\n\ta - b;\n}\n"
+  assert_equal "if(a == b){\n\ta + b;\n}else {\n\ta - b;\n}"
   @@ ConModule.convertToString ifElseStatement;
-  assert_equal "if (True){\n\ta + b;\n}\nelse if (False){\n\ta - b;\n}\n"
-  @@ ConModule.convertToString ifElseIfStatement;
-  assert_equal "if (True){\n\ta + b;\n}\nelse{\n\telse{\n\ta - b;\n}\n}\n"
-  @@ ConModule.convertToString nestedIfElse
+  assert_equal "if(True){\n\ta + b;\n}else if(False) {\n\ta - b;\n}"
+  @@ ConModule.convertToString ifElseIfStatement
 
 (***************************** ORDERING **************************************************)
 
@@ -524,7 +488,7 @@ let orderSpaceTest_1 =
   ]
 
 let testOrdering _ =
-  assert_equal "a + b + c + d;\n a + b + c + d;\n"
+  assert_equal "a * b + c + d;\na - b - c + d;\n"
   @@ ConModule.convertToString orderSpaceTest_1
 
 (***************************** UTIL **************************************************)

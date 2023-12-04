@@ -1,2 +1,3 @@
 **/_build/*
-**.coverage
+**/_coverage/*
+*.coverage
