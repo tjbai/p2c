@@ -1,0 +1,7 @@
+(rule
+ (target submission.zip)
+ (deps
+  (source_tree src)
+  (source_tree tests))
+ (action
+  (run zip -r submission.zip %{deps})))

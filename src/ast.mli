@@ -7,6 +7,7 @@ type binaryOp =
   | Subtract
   | Multiply
   | Divide
+  | Mod
   | And
   | Or
   | Equal
@@ -23,7 +24,12 @@ type expression =
   | StringLiteral of string
   | BooleanLiteral of bool
   | Identifier of string
-  | Assignment of { name : string; t : primitive; value : expression }
+  | Assignment of {
+      name : string;
+      t : primitive;
+      value : expression;
+      operator : binaryOp option;
+    }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : string; arguments : expression list }

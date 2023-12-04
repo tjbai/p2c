@@ -1,3 +1,5 @@
 **/_build/*
 **/_coverage/*
 *.coverage
+.ocamlformat
+.ocamlformat-ignore

@@ -32,7 +32,7 @@ type token =
 let whitespace = [ ' '; '\t'; '\n' ]
 
 let binary_ops =
-  [ "+"; "*"; "/"; "-"; "and"; "or"; "=="; "!="; "<"; "<="; ">"; ">=" ]
+  [ "+"; "*"; "/"; "-"; "and"; "or"; "=="; "!="; "<"; "<="; ">"; ">="; "%" ]
 
 let unary_ops = [ "not" ]
 
@@ -135,8 +135,7 @@ let tokenize (file : string) : token list =
   in
 
   match file |> String.split_lines |> List.fold ~init ~f with
-  | t, indent when indent > 0 -> t @ [ Dedent ]
-  | t, _ -> t
+  | t, indent -> t @ List.init indent ~f:(fun _ -> Dedent)
 
 let show_token (t : token) : string =
   t |> sexp_of_token |> Sexplib.Sexp.to_string
