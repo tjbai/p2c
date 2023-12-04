@@ -435,13 +435,97 @@ let ifElseIfStatement =
       };
   ]
 
+let nestedIfElse =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Add; left = Identifier "a"; right = Identifier "b" });
+    Ast.Else
+      {
+        body =
+          [
+            Ast.If
+              {
+                test = BooleanLiteral false;
+                body =
+                  [
+                    Expression
+                      (BinaryOp
+                         {
+                           operator = Ast.Subtract;
+                           left = Identifier "a";
+                           right = Identifier "b";
+                         });
+                    Expression
+                      (BinaryOp
+                         {
+                           operator = Ast.Multiply;
+                           left = Identifier "a";
+                           right = Identifier "b";
+                         });
+                  ];
+              };
+          ];
+      };
+  ]
+
 let testControl _ =
   assert_equal "if (True){\n\ta + b;\n}\n"
   @@ ConModule.convertToString basicIfStatement;
   assert_equal "if (True){\n\ta + b;\n}\nelse{\n\ta - b;\n}\n"
   @@ ConModule.convertToString ifElseStatement;
   assert_equal "if (True){\n\ta + b;\n}\nelse if (False){\n\ta - b;\n}\n"
-  @@ ConModule.convertToString ifElseIfStatement
+  @@ ConModule.convertToString ifElseIfStatement;
+  assert_equal "if (True){\n\ta + b;\n}\nelse{\n\telse{\n\ta - b;\n}\n}\n"
+  @@ ConModule.convertToString nestedIfElse
+
+(***************************** ORDERING **************************************************)
+
+let orderSpaceTest_1 =
+  [
+    Ast.Expression
+      (BinaryOp
+         {
+           operator = Ast.Add;
+           left =
+             BinaryOp
+               {
+                 operator = Ast.Multiply;
+                 left = Identifier "a";
+                 right = Identifier "b";
+               };
+           right =
+             BinaryOp
+               {
+                 operator = Ast.Add;
+                 left = Identifier "c";
+                 right = Identifier "d";
+               };
+         });
+    Ast.Expression
+      (BinaryOp
+         {
+           operator = Ast.Subtract;
+           left =
+             BinaryOp
+               {
+                 operator = Ast.Subtract;
+                 left = Identifier "a";
+                 right = Identifier "b";
+               };
+           right =
+             BinaryOp
+               {
+                 operator = Ast.Add;
+                 left = Identifier "c";
+                 right = Identifier "d";
+               };
+         });
+  ]
+
+let testOrdering _ =
+  assert_equal "a + b + c + d;\n a + b + c + d;\n"
+  @@ ConModule.convertToString orderSpaceTest_1
 
 (***************************** UTIL **************************************************)
 
@@ -456,6 +540,7 @@ let codeGenTests =
          "core function tests" >:: coreFuncTests;
          "functions tests" >:: functionTests;
          "control tests" >:: testControl;
+         "ordering tests" >:: testOrdering;
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]
