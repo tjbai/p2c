@@ -176,6 +176,29 @@ let multDivAddSub =
          });
   ]
 
+let and_or =
+  [
+    Ast.Expression
+      (BinaryOp
+         {
+           operator = Ast.And;
+           left =
+             BinaryOp
+               {
+                 operator = Ast.Or;
+                 left = Identifier "a";
+                 right = Identifier "b";
+               };
+           right =
+             BinaryOp
+               {
+                 operator = Ast.Or;
+                 left = Identifier "c";
+                 right = Identifier "d";
+               };
+         });
+  ]
+
 let expression_1 _ =
   assert_equal "a + b + c + d;\n" @@ ConModule.convertToString additionOnly;
   assert_equal "(a + b) * (c + d);\n" @@ ConModule.convertToString addMult_1;
@@ -185,12 +208,16 @@ let expression_1 _ =
   assert_equal "a + b - c + d;\n" @@ ConModule.convertToString addSubMix;
   assert_equal "a * b / c / d;\n" @@ ConModule.convertToString multDiv;
   assert_equal "a * b / b + c - c / d;\n"
-  @@ ConModule.convertToString multDivAddSub
+  @@ ConModule.convertToString multDivAddSub;
+  assert_equal "(a || b) && (c || d);\n" @@ ConModule.convertToString and_or
 
 (***************************** Assignment tests **************************************)
 
 let assignment_eg_1 =
-  [ Ast.Expression (Assignment { name = "a"; value = IntLiteral 5 }) ]
+  [
+    Ast.Expression
+      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int });
+  ]
 
 let assignment_1 _ =
   assert_equal "a = 5;\n" @@ ConModule.convertToString assignment_eg_1
@@ -300,8 +327,8 @@ let function_1 =
     Ast.Function
       {
         name = "main";
-        arguments = [ ("a", Ast.Int) ];
-        returnType = Ast.Int;
+        parameters = [ ("a", Ast.Int) ];
+        return = Ast.Int;
         body =
           [
             Expression
@@ -319,6 +346,103 @@ let functionTests _ =
   assert_equal "int main (int a){\n\tc /d;\n}"
   @@ ConModule.convertToString function_1
 
+(***************************** CONTROL **********************************************)
+
+let basicIfStatement =
+  [
+    Ast.If
+      {
+        test = BooleanLiteral true;
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
+  ]
+
+let ifElseStatement =
+  [
+    Ast.If
+      {
+        test =
+          Ast.BinaryOp
+            {
+              operator = Ast.Equal;
+              left = Identifier "a";
+              right = Identifier "b";
+            };
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
+    Ast.Else
+      {
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Subtract;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
+  ]
+
+let ifElseIfStatement =
+  [
+    Ast.If
+      {
+        test = BooleanLiteral true;
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
+    Ast.Elif
+      {
+        test = BooleanLiteral false;
+        body =
+          [
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Subtract;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 });
+          ];
+      };
+  ]
+
+let testControl _ =
+  assert_equal "if (True){\n\ta + b;\n}\n"
+  @@ ConModule.convertToString basicIfStatement;
+  assert_equal "if (True){\n\ta + b;\n}\nelse{\n\ta - b;\n}\n"
+  @@ ConModule.convertToString ifElseStatement;
+  assert_equal "if (True){\n\ta + b;\n}\nelse if (False){\n\ta - b;\n}\n"
+  @@ ConModule.convertToString ifElseIfStatement
+
 (***************************** UTIL **************************************************)
 
 let codeGenTests =
@@ -331,6 +455,7 @@ let codeGenTests =
          "function call tests" >:: functionCall_1;
          "core function tests" >:: coreFuncTests;
          "functions tests" >:: functionTests;
+         "control tests" >:: testControl;
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]

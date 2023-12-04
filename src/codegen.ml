@@ -75,6 +75,23 @@ module Common = struct
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
     | _ -> ""
+
+  let rec checkIfAndOperatorPresent (exp : Ast.expression) : bool =
+    match exp with
+    | Ast.BinaryOp { operator = op; left; right } -> (
+        match op with
+        | Ast.And -> true
+        | _ -> checkIfAndOperatorPresent left || checkIfAndOperatorPresent right
+        )
+    | _ -> false
+
+  let rec checkIfOrOperatorPresent (exp : Ast.expression) : bool =
+    match exp with
+    | Ast.BinaryOp { operator = op; left; right } -> (
+        match op with
+        | Ast.Or -> true
+        | _ -> checkIfOrOperatorPresent left || checkIfOrOperatorPresent right)
+    | _ -> false
 end
 
 module Expressions = struct
@@ -109,8 +126,30 @@ module Expressions = struct
           | Ast.Multiply -> multDiv left "*" right
           | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
           | Ast.Divide -> multDiv left "/" right
-          | Ast.And -> mainHelper left ^ " && " ^ mainHelper right
-          | Ast.Or -> mainHelper left ^ " || " ^ mainHelper right
+          | Ast.And -> (
+              match
+                ( Common.checkIfOrOperatorPresent left,
+                  Common.checkIfOrOperatorPresent right )
+              with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
+              | true, false ->
+                  "(" ^ mainHelper left ^ ") && " ^ mainHelper right
+              | false, true ->
+                  mainHelper left ^ " && (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " && " ^ mainHelper right)
+          | Ast.Or -> (
+              match
+                ( Common.checkIfAndOperatorPresent left,
+                  Common.checkIfAndOperatorPresent right )
+              with
+              | true, true ->
+                  "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
+              | true, false ->
+                  "(" ^ mainHelper left ^ ") || " ^ mainHelper right
+              | false, true ->
+                  mainHelper left ^ " || (" ^ mainHelper right ^ ")"
+              | false, false -> mainHelper left ^ " || " ^ mainHelper right)
           | Ast.Equal -> mainHelper left ^ " == " ^ mainHelper right
           | Ast.NotEqual -> mainHelper left ^ " != " ^ mainHelper right
           | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
@@ -189,7 +228,7 @@ module ConModule : CodeGen = struct
       | [] -> acc
       (*Expression Assignment*)
       | Ast.Expression exp :: tl ->
-          helper tl (Expressions.convertExpressionToString exp)
+          helper tl acc ^ Expressions.convertExpressionToString exp
       (*Function Creation*)
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
@@ -199,7 +238,7 @@ module ConModule : CodeGen = struct
             ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n\t"
             ^ helper stateList ";\n" ^ "}"
           in
-          helper tl functionToString
+          helper tl acc ^ functionToString
       (*For Loops*)
       | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
         :: tl ->
@@ -207,11 +246,35 @@ module ConModule : CodeGen = struct
             convertForLoopString id lower upper inc
             ^ "{\n\t" ^ helper statelist "" ^ ";\n}"
           in
-          helper tl forLoopStr
+          helper tl acc ^ forLoopStr
       (*while Loops*)
-      (*if*)
-      (*else if*)
-      (*else*)
+      | Ast.While { test = exp; body = statelist } :: tl ->
+          let whileLoopStr =
+            "while("
+            ^ Expressions.convertExpressionToString exp
+            ^ "){\n\t" ^ helper statelist "" ^ ";\n}"
+          in
+          helper tl acc ^ whileLoopStr
+      (*if statements*)
+      | Ast.If { test = exp; body = statelist } :: tl ->
+          let ifStr =
+            "if("
+            ^ Expressions.convertExpressionToString exp
+            ^ "){\n\t" ^ helper statelist "" ^ ";\n}"
+          in
+          helper tl acc ^ ifStr
+      (*else if statements*)
+      | Ast.Elif { test = exp; body = statelist } :: tl ->
+          let elifStr =
+            "else if("
+            ^ Expressions.convertExpressionToString exp
+            ^ "){\n\t" ^ helper statelist "" ^ ";\n}"
+          in
+          helper tl acc ^ elifStr
+      (*else statements*)
+      | Ast.Else { body = statelist } :: tl ->
+          let elseStr = "else{\n\t" ^ helper statelist "" ^ ";\n}" in
+          helper tl acc ^ elseStr
       (*Control statements*)
       | Ast.Return exp :: tl ->
           helper tl
@@ -220,7 +283,6 @@ module ConModule : CodeGen = struct
       | Ast.Pass :: tl -> helper tl (acc ^ "\treturn;")
       | Ast.Break :: tl -> helper tl (acc ^ "\tbreak;\n")
       | Ast.Continue :: tl -> helper tl (acc ^ "\tcontinue;\n")
-      | _ -> "bob"
     in
     helper tree_list ""
 end
