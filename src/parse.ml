@@ -45,11 +45,7 @@ let map_bop (s : string) : binaryOp =
   | _ -> failwith "invalid binary op"
 
 let map_fn (s : string) : (coreIdentifier, string) union =
-  match s with
-  | "print" -> A Print
-  | "input" -> A Input
-  | "range" -> A Range
-  | _ -> B s
+  match s with "print" -> A Print | "input" -> A Input | _ -> B s
 
 let map_t (t : token) : primitive =
   match t with
