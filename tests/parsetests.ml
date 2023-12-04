@@ -592,7 +592,68 @@ let test_nested_blocks _ =
         \t\tprint(i)\n\
         \twhile True:\n\
         \t\tif True:\n\
-        \t\t\tbreak"
+        \t\t\tbreak";
+
+  assert_equal
+    Ast.
+      [
+        Function
+          {
+            name = "solve";
+            parameters = [ ("n", Int) ];
+            return = Int;
+            body =
+              [
+                Return
+                  (BinaryOp
+                     {
+                       operator = Divide;
+                       left = Identifier "n";
+                       right = IntLiteral 2;
+                     });
+              ];
+          };
+        Expression
+          (Assignment { name = "i"; t = Unknown; value = IntLiteral 0 });
+        For
+          {
+            value = "line";
+            lower = IntLiteral 0;
+            upper = IntLiteral 10;
+            increment = IntLiteral 1;
+            body =
+              [
+                Expression
+                  (Assignment
+                     {
+                       name = "i";
+                       t = Unknown;
+                       value =
+                         BinaryOp
+                           {
+                             operator = Add;
+                             left = Identifier "i";
+                             right =
+                               FunctionCall
+                                 {
+                                   name = "solve";
+                                   arguments = [ Identifier "line" ];
+                                 };
+                           };
+                     });
+              ];
+          };
+        Expression
+          (CoreFunctionCall { name = Print; arguments = [ Identifier "tot" ] });
+      ]
+  @@ toast
+       "\n\
+        def solve(n: int) -> int:\n\
+        \treturn n/2\n\n\n\
+        i = 0\n\
+        for line in range(10):\n\
+        \ti = i + solve(line)\n\n\
+        print(tot)"
 
 let tests =
   "Parse tests"
@@ -608,7 +669,7 @@ let tests =
          "For loops" >:: test_for_loops;
          "While loop" >:: test_while_loops;
          "Conditionals" >:: test_conditionals;
-         "Nested blocks" >:: test_nested_blocks;
+         "Nested blocks and complete programs" >:: test_nested_blocks;
        ]
 
 let () = run_test_tt_main tests

@@ -2,7 +2,7 @@ open Sexplib.Std (* need for string_of_sexp *)
 
 type primitive = Int | String | Boolean | Void | Unknown [@@deriving sexp]
 type identifier = string [@@deriving sexp]
-type coreIdentifier = Print | Input | Range [@@deriving sexp]
+type coreIdentifier = Print | Input [@@deriving sexp]
 
 (* binary operations *)
 type binaryOp =
@@ -27,7 +27,12 @@ type expression =
   | StringLiteral of string
   | BooleanLiteral of bool
   | Identifier of identifier
-  | Assignment of { name : identifier; t : primitive; value : expression }
+  | Assignment of {
+      name : identifier;
+      t : primitive;
+      value : expression;
+      operator : binaryOp option;
+    }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }
   | FunctionCall of { name : identifier; arguments : expression list }

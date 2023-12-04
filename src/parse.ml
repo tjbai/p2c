@@ -240,5 +240,6 @@ and parse (ts : token list) : a_context =
   in
   aux ts []
 
+(* string -> ast *)
 let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
 let infer_types (ast : ast) : ast = []
