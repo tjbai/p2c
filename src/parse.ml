@@ -14,8 +14,6 @@ type params = (string * primitive) list
 (* For matching against invariants the type system can't catch *)
 let impossible () = failwith "reaching this case should be impossible"
 
-(* TODO: make all failwith messages more descriptive / debuggable *)
-
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
   | "False", _ -> BooleanLiteral false
@@ -174,10 +172,11 @@ let rec parse_statement (ts : token list) : s_context =
       let parameters, return, tl = parse_fn_def tl in
       let body, tl = parse_body tl in
       (Function { name; parameters; body; return }, tl)
-  | For :: Value value :: In :: Value "range" :: Lparen :: tl ->
-      parse_for tl value
-  | While :: tl -> (Break, tl)
-  | (If | Elif | Else) :: tl -> (Break, tl)
+  | For :: Value v :: In :: Value _ :: Lparen :: tl -> parse_for tl v
+  | ((While | If | Elif) as c) :: tl -> parse_conditional tl c
+  | Else :: Colon :: Newline :: Indent :: tl ->
+      let body, tl = parse_body tl in
+      (Else { body }, tl)
   | Return :: tl ->
       let expression, tl = parse_expression tl in
       (Return expression, tl)
@@ -187,25 +186,7 @@ let rec parse_statement (ts : token list) : s_context =
       let expression, tl = parse_expression ts in
       (Expression expression, tl)
 
-(* Parse a list of statements *)
-and parse (ts : token list) : a_context =
-  let rec aux tl (acc : ast) =
-    match tl with
-    | Newline :: tl -> aux tl acc
-    | [] -> (List.rev acc, [])
-    | _ ->
-        let statement, tl = parse_statement tl in
-        aux tl (statement :: acc)
-  in
-  aux ts []
-
-and parse_body (ts : token list) : a_context =
-  let body_ts, tl = find_dedent ts in
-  match parse body_ts with body, _ -> (body, tl)
-
 (* Parse everything after for _ in range(... *)
-(* NOTE: Find more polymorphic way to parse functions
-   with variable numbers of arguments *)
 and parse_for (ts : token list) (value : string) : s_context =
   let fn_call, tl = parse_fn_call "range" ts in
   match tl with
@@ -231,5 +212,33 @@ and parse_for (ts : token list) (value : string) : s_context =
       | _ -> impossible ())
   | _ -> failwith "malformed for loop"
 
-(* DFS to infer assignment types from leaf literals *)
-let infer_types (ast : ast) : ast = ast
+(* Parse everything after while ... *)
+and parse_conditional (ts : token list) (c : token) : s_context =
+  let test, tl = parse_expression ts in
+  match tl with
+  | Colon :: Newline :: Indent :: tl -> (
+      let body, tl = parse_body tl in
+      match c with
+      | Lex.While -> (Ast.While { test; body }, tl)
+      | Lex.If -> (Ast.If { test; body }, tl)
+      | Lex.Elif -> (Ast.Elif { test; body }, tl)
+      | _ -> impossible ())
+  | _ -> failwith "malformed while loop"
+
+and parse_body (ts : token list) : a_context =
+  let body_ts, tl = find_dedent ts in
+  match parse body_ts with body, _ -> (body, tl)
+
+and parse (ts : token list) : a_context =
+  let rec aux tl (acc : ast) =
+    match tl with
+    | Newline :: tl -> aux tl acc
+    | [] -> (List.rev acc, [])
+    | _ ->
+        let statement, tl = parse_statement tl in
+        aux tl (statement :: acc)
+  in
+  aux ts []
+
+let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
+let infer_types (ast : ast) : ast = []

@@ -348,6 +348,252 @@ let test_for_loops _ =
        })
   @@ tos "for i in range(a+b, 10, 2):\n\tprint(i)"
 
+let test_while_loops _ =
+  assert_equal
+    (Ast.While
+       {
+         test =
+           BinaryOp
+             { operator = Lt; left = Identifier "i"; right = IntLiteral 10 };
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+           ];
+       })
+  @@ tos "while i < 10:\n\tprint(i)";
+
+  assert_equal
+    (Ast.While
+       {
+         test =
+           BinaryOp
+             {
+               operator = And;
+               left =
+                 BinaryOp
+                   {
+                     operator = Lt;
+                     left = Identifier "i";
+                     right = IntLiteral 10;
+                   };
+               right = BooleanLiteral true;
+             };
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+           ];
+       })
+  @@ tos "while i < 10 and True:\n\tprint(i)";
+
+  assert_equal
+    (Ast.While
+       {
+         test =
+           BinaryOp
+             {
+               operator = And;
+               left =
+                 BinaryOp
+                   {
+                     operator = Lt;
+                     left = Identifier "i";
+                     right = IntLiteral 10;
+                   };
+               right = BooleanLiteral true;
+             };
+         body =
+           [
+             Expression
+               (CoreFunctionCall
+                  { name = Print; arguments = [ Identifier "i" ] });
+             Break;
+           ];
+       })
+  @@ tos "while i < 10 and True:\n\tprint(i)\n\tbreak"
+
+let test_conditionals _ =
+  assert_equal
+    [
+      Ast.If
+        {
+          test =
+            BinaryOp
+              {
+                operator = And;
+                left =
+                  BinaryOp
+                    {
+                      operator = And;
+                      left =
+                        BinaryOp
+                          {
+                            operator = Lt;
+                            left = Identifier "i";
+                            right = IntLiteral 10;
+                          };
+                      right = BooleanLiteral true;
+                    };
+                right =
+                  BinaryOp
+                    {
+                      operator = Lt;
+                      left =
+                        BinaryOp
+                          {
+                            operator = Add;
+                            left = IntLiteral 2;
+                            right = IntLiteral 3;
+                          };
+                      right = IntLiteral 5;
+                    };
+              };
+          body = [ Continue ];
+        };
+    ]
+  @@ toast "if i < 10 and True and (2+3<5):\n\tcontinue";
+
+  assert_equal
+    [
+      Ast.If
+        {
+          test = BooleanLiteral true;
+          body =
+            [
+              Expression
+                (CoreFunctionCall
+                   { name = Print; arguments = [ StringLiteral "true" ] });
+            ];
+        };
+      Ast.Elif
+        {
+          test = BooleanLiteral false;
+          body =
+            [
+              Expression
+                (CoreFunctionCall
+                   { name = Print; arguments = [ StringLiteral "false" ] });
+            ];
+        };
+      Ast.Else
+        {
+          body =
+            [
+              Expression
+                (CoreFunctionCall
+                   { name = Print; arguments = [ StringLiteral "else" ] });
+            ];
+        };
+    ]
+  @@ toast
+       "if True:\n\
+        \tprint('true')\n\
+        elif False:\n\
+        \tprint('false')\n\
+        else:\n\
+        \tprint('else')"
+
+let test_nested_blocks _ =
+  assert_equal
+    Ast.
+      [
+        For
+          {
+            value = "i";
+            lower = IntLiteral 0;
+            upper = IntLiteral 10;
+            increment = IntLiteral 1;
+            body =
+              [
+                If
+                  {
+                    test =
+                      BinaryOp
+                        {
+                          operator = Lt;
+                          left = Identifier "i";
+                          right = IntLiteral 5;
+                        };
+                    body =
+                      [
+                        Expression
+                          (CoreFunctionCall
+                             { name = Print; arguments = [ Identifier "i" ] });
+                      ];
+                  };
+                Else
+                  {
+                    body =
+                      [
+                        Expression
+                          (CoreFunctionCall
+                             {
+                               name = Print;
+                               arguments =
+                                 [
+                                   BinaryOp
+                                     {
+                                       operator = Subtract;
+                                       left = IntLiteral 10;
+                                       right = Identifier "i";
+                                     };
+                                 ];
+                             });
+                      ];
+                  };
+              ];
+          };
+      ]
+  @@ toast
+       "for i in range(10):\n\
+        \tif i < 5:\n\
+        \t\tprint(i)\n\
+        \telse:\n\
+        \t\tprint(10-i)";
+
+  assert_equal
+    Ast.
+      [
+        Function
+          {
+            name = "foo";
+            parameters = [ ("a", Int) ];
+            return = Void;
+            body =
+              [
+                For
+                  {
+                    value = "i";
+                    lower = IntLiteral 0;
+                    upper = Identifier "a";
+                    increment = IntLiteral 1;
+                    body =
+                      [
+                        Expression
+                          (CoreFunctionCall
+                             { name = Print; arguments = [ Identifier "i" ] });
+                      ];
+                  };
+                While
+                  {
+                    test = BooleanLiteral true;
+                    body =
+                      [ If { test = BooleanLiteral true; body = [ Break ] } ];
+                  };
+              ];
+          };
+      ]
+  @@ toast
+       "def foo(a: int):\n\
+        \tfor i in range(a):\n\
+        \t\tprint(i)\n\
+        \twhile True:\n\
+        \t\tif True:\n\
+        \t\t\tbreak"
+
 let tests =
   "Parse tests"
   >: test_list
@@ -360,6 +606,9 @@ let tests =
          "Function calls" >:: test_function_calls;
          "Function definitions" >:: test_function_defs;
          "For loops" >:: test_for_loops;
+         "While loop" >:: test_while_loops;
+         "Conditionals" >:: test_conditionals;
+         "Nested blocks" >:: test_nested_blocks;
        ]
 
 let () = run_test_tt_main tests

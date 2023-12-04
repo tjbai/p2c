@@ -7,4 +7,5 @@ val split_on : token -> token list -> token list list
 val parse_expression : token list -> expression * token list
 val parse_statement : token list -> statement * token list
 val parse : token list -> ast * token list
+val toast : string -> ast
 val infer_types : ast -> ast
