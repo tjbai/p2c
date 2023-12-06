@@ -10,6 +10,8 @@ We've implemented functionality for parsing, lexing, and converting the AST tree
 
 To test, run `dune test` (all tests should pass)
 
+Or run `run.sh` to automatically test, get coverage, and build the project
+
 **Next steps** 
 
 End to end testing 
