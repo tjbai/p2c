@@ -251,5 +251,11 @@ let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
 
 (***********************************************************************************************)
 
+(* Try to figure out the type of an assignment *)
 let infer_types (ast : ast) : ast = []
-let infer_def (ast : ast) : ast = []
+
+(* Figure out what assignments are actually definitions *)
+let resolve_scopes (ast : ast) : ast = []
+
+(* Look at every UnaryOp between neg and an IntLiteral *)
+let fill_in_negs (ast : ast) : ast = []
