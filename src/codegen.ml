@@ -107,7 +107,7 @@ module Common = struct
         | Ast.Gte -> ">="
         | Ast.Mod -> "%"
       )
-      | None -> "="  
+      | None -> ""  
 end
 
 module Expressions = struct
@@ -156,7 +156,7 @@ module Expressions = struct
       | Ast.Identifier i -> i
       (*Assignments*)
       | Ast.Assignment { name = id; value = exp; t = varType; operator = op} ->
-          Common.primitiveToString varType ^ " " ^ id ^ (Common.binaryToString op)^ mainHelper exp
+          Common.primitiveToString varType ^ " " ^ id ^ (Common.binaryToString op)^ " = "^mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with

@@ -216,7 +216,7 @@ let expression_1 _ =
 let assignment_eg_1 =
   [
     Ast.Expression
-      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = Some Ast.Add });
+      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
   ]
 
 let assignment_1 _ =
