@@ -50,7 +50,7 @@ module Common = struct
     | Ast.Int -> "int"
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
-    | _ -> ""
+    | _ -> failwith "Invalid primitive"
 
   let rec checkIfAndOperatorPresent (exp : Ast.expression) : bool =
     match exp with
@@ -324,7 +324,7 @@ module ConModule : CodeGen = struct
               countTabs
           ^ ";\n"
       | Ast.Pass :: tl ->
-          numberOfTabs countTabs ^ helper tl (acc ^ "return;") countTabs
+          numberOfTabs countTabs ^ helper tl (acc ^ "return;\n") countTabs
       | Ast.Break :: tl ->
           numberOfTabs countTabs ^ helper tl (acc ^ "break;\n") countTabs
       | Ast.Continue :: tl ->
