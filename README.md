@@ -1,7 +1,20 @@
-# Order of Testing
+## P2C 
 
+#### Project Description 
+Conversion of Python files to C/C++
 
-1. Expressions
-2. Control (If,Else)
-3. Loops (for,while)
-4. Functions
+#### Checkpoint 
+**What's been Impelemented** 
+
+We've implemented functionality for parsing, lexing, and converting the AST trees to C code. 
+
+To test, run `dune test` (all tests should pass)
+
+**Next steps** 
+
+End to end testing 
+
+Writing functions for file I/O
+
+Header files
+
