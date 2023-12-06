@@ -233,7 +233,57 @@ module ConModule : CodeGen = struct
     ^ "=" ^ value ^ "+" ^ increment ^ ")"
 
   let convertToString (main_tree : Ast.statement list) : string =
-    let rec helper (tree_list : Ast.statement list) (acc : string)
+
+    (*function to string*)
+    let rec functionToString prim name args stateList countTabs =
+      numberOfTabs countTabs
+      ^ Common.primitiveToString prim
+      ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
+      ^ helper stateList "" (countTabs + 1)
+      ^ "}"
+
+    (*for loop conversion*)
+    and forLoopStr id lower upper inc statelist countTabs =
+      numberOfTabs countTabs
+      ^ convertForLoopString id
+          (Expressions.convertExpressionToString lower main_tree)
+          (Expressions.convertExpressionToString upper main_tree)
+          (Expressions.convertExpressionToString inc main_tree)
+      ^ "{\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ "}"
+
+    (*while loop conversion*)
+    and whileLoopStr exp statelist countTabs =
+      numberOfTabs countTabs ^ "while("
+      ^ Expressions.convertExpressionToString exp main_tree
+      ^ "){\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ "}"
+
+    (*if statement conversion*)
+    and ifStr exp statelist countTabs =
+      numberOfTabs countTabs ^ "if("
+      ^ Expressions.convertExpressionToString exp main_tree
+      ^ "){\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ "}"
+
+    (*else if statement conversion*)
+    and elifStr exp statelist countTabs =
+      numberOfTabs countTabs ^ "else if("
+      ^ Expressions.convertExpressionToString exp main_tree
+      ^ ") {\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ "}"
+      
+    (*else string conversions*)
+    and elseStr statelist countTabs =
+      numberOfTabs countTabs ^ "else {\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ "}"
+
+    and helper (tree_list : Ast.statement list) (acc : string)
         (countTabs : int) : string =
       match tree_list with
       | [] -> acc
@@ -248,66 +298,23 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
-          let functionToString =
-            numberOfTabs countTabs
-            ^ Common.primitiveToString prim
-            ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
-            ^ helper stateList "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ functionToString) countTabs
+          helper tl (acc ^ (functionToString prim name args stateList countTabs)) countTabs
       (*For Loops*)
       | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
         :: tl ->
-          let forLoopStr =
-            numberOfTabs countTabs
-            ^ convertForLoopString id
-                (Expressions.convertExpressionToString lower main_tree)
-                (Expressions.convertExpressionToString upper main_tree)
-                (Expressions.convertExpressionToString inc main_tree)
-            ^ "{\n"
-            ^ helper statelist "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ forLoopStr) countTabs
+          helper tl (acc ^ (forLoopStr id lower upper inc statelist countTabs)) countTabs
       (*while Loops*)
       | Ast.While { test = exp; body = statelist } :: tl ->
-          let whileLoopStr =
-            numberOfTabs countTabs ^ "while("
-            ^ Expressions.convertExpressionToString exp main_tree
-            ^ "){\n"
-            ^ helper statelist "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ whileLoopStr) countTabs
+          helper tl (acc ^ (whileLoopStr exp statelist countTabs)) countTabs
       (*if statements*)
       | Ast.If { test = exp; body = statelist } :: tl ->
-          let ifStr =
-            numberOfTabs countTabs ^ "if("
-            ^ Expressions.convertExpressionToString exp main_tree
-            ^ "){\n"
-            ^ helper statelist "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ ifStr) countTabs
+          helper tl (acc ^ (ifStr exp statelist countTabs)) countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
-          let elifStr =
-            numberOfTabs countTabs ^ "else if("
-            ^ Expressions.convertExpressionToString exp main_tree
-            ^ ") {\n"
-            ^ helper statelist "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ elifStr) countTabs
+          helper tl (acc ^ elifStr exp statelist countTabs) countTabs
       (*else statements*)
       | Ast.Else { body = statelist } :: tl ->
-          let elseStr =
-            numberOfTabs countTabs ^ "else {\n"
-            ^ helper statelist "" (countTabs + 1)
-            ^ "}"
-          in
-          helper tl (acc ^ elseStr) countTabs
+          helper tl (acc ^ (elseStr statelist countTabs)) countTabs
       (*Control statements*)
       | Ast.Return exp :: tl ->
           numberOfTabs countTabs
