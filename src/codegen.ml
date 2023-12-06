@@ -148,7 +148,7 @@ module Expressions = struct
         )
         | _ -> failwith "Invalid operator"
             
-    and  mainHelper (exp : Ast.expression) : string =
+    and mainHelper (exp : Ast.expression) : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
@@ -276,7 +276,7 @@ module ConModule : CodeGen = struct
       ^ ") {\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-      
+
     (*else string conversions*)
     and elseStr statelist countTabs =
       numberOfTabs countTabs ^ "else {\n"
