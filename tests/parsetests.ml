@@ -95,12 +95,19 @@ let test_simple_expressions _ =
                right = StringLiteral "world";
              };
          operator = None;
+         isdef = false;
        })
   @@ toe "helloword = \"hello\" + \'world\'";
 
   assert_equal
     (Assignment
-       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
+       {
+         name = "i";
+         t = Unknown;
+         value = IntLiteral 1;
+         operator = Some Add;
+         isdef = false;
+       })
   @@ toe "i += 1";
 
   assert_equal
@@ -632,7 +639,13 @@ let test_nested_blocks _ =
           };
         Expression
           (Assignment
-             { name = "i"; t = Unknown; value = IntLiteral 0; operator = None });
+             {
+               name = "i";
+               t = Unknown;
+               value = IntLiteral 0;
+               operator = None;
+               isdef = false;
+             });
         For
           {
             value = "line";
@@ -659,6 +672,7 @@ let test_nested_blocks _ =
                                  };
                            };
                        operator = None;
+                       isdef = false;
                      });
               ];
           };

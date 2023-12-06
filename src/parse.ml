@@ -132,10 +132,12 @@ let rec parse_expression (ts : token list) : e_context =
   match ts with
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
-      (Assignment { name; t = Unknown; value; operator = None }, tl)
+      let operator = None in
+      (Assignment { name; t = Unknown; value; operator; isdef = false }, tl)
   | Value name :: Bop op :: Assign :: tl ->
       let value, tl = parse_expression tl in
-      (Assignment { name; t = Unknown; value; operator = Some (map_bop op) }, tl)
+      let operator = Some (map_bop op) in
+      (Assignment { name; t = Unknown; value; operator; isdef = false }, tl)
   | _ -> aux ts [] []
 
 (* Parse everything after `name(` *)

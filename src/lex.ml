@@ -1,5 +1,8 @@
 open Core
 
+[@@@warning "-27"]
+[@@@warning "-32"]
+
 type token =
   | Value of string
   | Bop of string
@@ -121,9 +124,11 @@ let tokenize_line (line : string list) : token list =
 
   let rec join_uops (acc : token list) (ts : token list) =
     match ts with
-    | [] -> ts
-    | ((Value _ | Rparen) as hd) :: tl -> join_uops (hd :: acc) tl
-    | _ -> failwith "incomplete"
+    | [] -> List.rev acc
+    | ((Value _ | Rparen) as hd) :: Bop "-" :: tl ->
+        join_uops (Bop "-" :: hd :: acc) tl
+    | hd :: Bop "-" :: tl -> join_uops (Uop "-" :: hd :: acc) tl
+    | hd :: tl -> join_uops (hd :: acc) tl
   in
 
   line |> aux [] |> join_uops []
