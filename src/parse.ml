@@ -24,7 +24,7 @@ let literal (s : string) : expression =
   | _, None -> Identifier s
 
 let map_uop (s : string) : unaryOp =
-  match s with "not" -> Not | _ -> failwith "invalid unary op"
+  match s with "not" -> Not | "-" -> Neg | _ -> failwith "invalid unary op"
 
 let map_bop (s : string) : binaryOp =
   match s with

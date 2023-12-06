@@ -88,10 +88,9 @@ module Common = struct
     in
     helper expList ""
 
-
-    let binaryToString (op : Ast.binaryOp option) : string =
-      match  op with
-      | Some op -> (
+  let binaryToString (op : Ast.binaryOp option) : string =
+    match op with
+    | Some op -> (
         match op with
         | Ast.Add -> "+"
         | Ast.Multiply -> "*"
@@ -105,49 +104,49 @@ module Common = struct
         | Ast.Lte -> "<="
         | Ast.Gt -> ">"
         | Ast.Gte -> ">="
-        | Ast.Mod -> "%"
-      )
-      | None -> ""  
+        | Ast.Mod -> "%")
+    | None -> ""
 end
 
 module Expressions = struct
   (*CONVERSION of Expression*)
 
   let convertExpressionToString (exp : Ast.expression) main_tree : string =
-
     (*multiplication and division*)
     let rec multDiv left op right =
       match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
       | true, true ->
-          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right
-          ^ ")"
+          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right ^ ")"
       | true, false ->
           "(" ^ mainHelper left ^ ") " ^ op ^ " " ^ mainHelper right
       | false, true ->
           mainHelper left ^ " " ^ op ^ " (" ^ mainHelper right ^ ")"
-      | false, false ->
-          mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
-    
-      (*and or for pembdas purposes*)
-      and andOrPemdas (left: Ast.expression) (right: Ast.expression) (op: Ast.binaryOp): string =
-
-        match op with 
-        | Ast.And -> (
-          match (Common.checkIfOrOperatorPresent left, Common.checkIfOrOperatorPresent right) with
-          | true, true -> "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
+      | false, false -> mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
+    (*and or for pembdas purposes*)
+    and andOrPemdas (left : Ast.expression) (right : Ast.expression)
+        (op : Ast.binaryOp) : string =
+      match op with
+      | Ast.And -> (
+          match
+            ( Common.checkIfOrOperatorPresent left,
+              Common.checkIfOrOperatorPresent right )
+          with
+          | true, true ->
+              "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
           | true, false -> "(" ^ mainHelper left ^ ") && " ^ mainHelper right
           | false, true -> mainHelper left ^ " && (" ^ mainHelper right ^ ")"
-          | false, false -> mainHelper left ^ " && " ^ mainHelper right
-        )
-        | Ast.Or -> (
-          match (Common.checkIfAndOperatorPresent left, Common.checkIfAndOperatorPresent right) with
-          | true, true -> "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
+          | false, false -> mainHelper left ^ " && " ^ mainHelper right)
+      | Ast.Or -> (
+          match
+            ( Common.checkIfAndOperatorPresent left,
+              Common.checkIfAndOperatorPresent right )
+          with
+          | true, true ->
+              "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
           | true, false -> "(" ^ mainHelper left ^ ") || " ^ mainHelper right
           | false, true -> mainHelper left ^ " || (" ^ mainHelper right ^ ")"
-          | false, false -> mainHelper left ^ " || " ^ mainHelper right
-        )
-        | _ -> failwith "Invalid operator"
-            
+          | false, false -> mainHelper left ^ " || " ^ mainHelper right)
+      | _ -> failwith "Invalid operator"
     and mainHelper (exp : Ast.expression) : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
@@ -155,8 +154,9 @@ module Expressions = struct
       | Ast.BooleanLiteral b -> Common.convertBoolToString b
       | Ast.Identifier i -> i
       (*Assignments*)
-      | Ast.Assignment { name = id; value = exp; t = varType; operator = op} ->
-          Common.primitiveToString varType ^ " " ^ id ^ (Common.binaryToString op)^ " = "^mainHelper exp
+      | Ast.Assignment { name = id; value = exp; t = varType; operator = op } ->
+          Common.primitiveToString varType
+          ^ " " ^ id ^ Common.binaryToString op ^ " = " ^ mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
@@ -164,19 +164,20 @@ module Expressions = struct
           | Ast.Multiply -> multDiv left "*" right
           | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
           | Ast.Divide -> multDiv left "/" right
-          | Ast.And -> andOrPemdas left right op 
-          | Ast.Or -> andOrPemdas left right op 
+          | Ast.And -> andOrPemdas left right op
+          | Ast.Or -> andOrPemdas left right op
           | Ast.Equal -> mainHelper left ^ " == " ^ mainHelper right
           | Ast.NotEqual -> mainHelper left ^ " != " ^ mainHelper right
           | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
           | Ast.Lte -> mainHelper left ^ " <= " ^ mainHelper right
           | Ast.Gt -> mainHelper left ^ " > " ^ mainHelper right
           | Ast.Gte -> mainHelper left ^ " >= " ^ mainHelper right
-          | Ast.Mod -> mainHelper left ^ " % " ^ mainHelper right
-          )
+          | Ast.Mod -> mainHelper left ^ " % " ^ mainHelper right)
       (*Unary Operations*)
       | Ast.UnaryOp { operator = op; operand = exp } -> (
-          match op with Ast.Not -> "!(" ^ mainHelper exp ^ ")")
+          match op with
+          | Ast.Not -> "!(" ^ mainHelper exp ^ ")"
+          | Ast.Neg -> "-(" ^ mainHelper exp ^ ")")
       (*Functional Calls*)
       | Ast.FunctionCall { name = id; arguments = expList } ->
           let args = List.map expList ~f:mainHelper in
@@ -233,7 +234,6 @@ module ConModule : CodeGen = struct
     ^ "=" ^ value ^ "+" ^ increment ^ ")"
 
   let convertToString (main_tree : Ast.statement list) : string =
-
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
       numberOfTabs countTabs
@@ -241,7 +241,6 @@ module ConModule : CodeGen = struct
       ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
       ^ helper stateList "" (countTabs + 1)
       ^ "}"
-
     (*for loop conversion*)
     and forLoopStr id lower upper inc statelist countTabs =
       numberOfTabs countTabs
@@ -252,7 +251,6 @@ module ConModule : CodeGen = struct
       ^ "{\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-
     (*while loop conversion*)
     and whileLoopStr exp statelist countTabs =
       numberOfTabs countTabs ^ "while("
@@ -260,7 +258,6 @@ module ConModule : CodeGen = struct
       ^ "){\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-
     (*if statement conversion*)
     and ifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "if("
@@ -268,7 +265,6 @@ module ConModule : CodeGen = struct
       ^ "){\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-
     (*else if statement conversion*)
     and elifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "else if("
@@ -276,15 +272,13 @@ module ConModule : CodeGen = struct
       ^ ") {\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-
     (*else string conversions*)
     and elseStr statelist countTabs =
       numberOfTabs countTabs ^ "else {\n"
       ^ helper statelist "" (countTabs + 1)
       ^ "}"
-
-    and helper (tree_list : Ast.statement list) (acc : string)
-        (countTabs : int) : string =
+    and helper (tree_list : Ast.statement list) (acc : string) (countTabs : int)
+        : string =
       match tree_list with
       | [] -> acc
       (*Expression Assignment*)
@@ -298,23 +292,27 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
-          helper tl (acc ^ (functionToString prim name args stateList countTabs)) countTabs
+          helper tl
+            (acc ^ functionToString prim name args stateList countTabs)
+            countTabs
       (*For Loops*)
       | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
         :: tl ->
-          helper tl (acc ^ (forLoopStr id lower upper inc statelist countTabs)) countTabs
+          helper tl
+            (acc ^ forLoopStr id lower upper inc statelist countTabs)
+            countTabs
       (*while Loops*)
       | Ast.While { test = exp; body = statelist } :: tl ->
-          helper tl (acc ^ (whileLoopStr exp statelist countTabs)) countTabs
+          helper tl (acc ^ whileLoopStr exp statelist countTabs) countTabs
       (*if statements*)
       | Ast.If { test = exp; body = statelist } :: tl ->
-          helper tl (acc ^ (ifStr exp statelist countTabs)) countTabs
+          helper tl (acc ^ ifStr exp statelist countTabs) countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
           helper tl (acc ^ elifStr exp statelist countTabs) countTabs
       (*else statements*)
       | Ast.Else { body = statelist } :: tl ->
-          helper tl (acc ^ (elseStr statelist countTabs)) countTabs
+          helper tl (acc ^ elseStr statelist countTabs) countTabs
       (*Control statements*)
       | Ast.Return exp :: tl ->
           numberOfTabs countTabs

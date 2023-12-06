@@ -17,7 +17,7 @@ type binaryOp =
   | Gt
   | Gte
 
-type unaryOp = Not
+type unaryOp = Not | Neg
 
 type expression =
   | IntLiteral of int
