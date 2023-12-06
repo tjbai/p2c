@@ -114,7 +114,41 @@ module Expressions = struct
   (*CONVERSION of Expression*)
 
   let convertExpressionToString (exp : Ast.expression) main_tree : string =
-    let rec mainHelper (exp : Ast.expression) : string =
+
+    (*multiplication and division*)
+    let rec multDiv left op right =
+      match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
+      | true, true ->
+          "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right
+          ^ ")"
+      | true, false ->
+          "(" ^ mainHelper left ^ ") " ^ op ^ " " ^ mainHelper right
+      | false, true ->
+          mainHelper left ^ " " ^ op ^ " (" ^ mainHelper right ^ ")"
+      | false, false ->
+          mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
+    
+      (*and or for pembdas purposes*)
+      and andOrPemdas (left: Ast.expression) (right: Ast.expression) (op: Ast.binaryOp): string =
+
+        match op with 
+        | Ast.And -> (
+          match (Common.checkIfOrOperatorPresent left, Common.checkIfOrOperatorPresent right) with
+          | true, true -> "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
+          | true, false -> "(" ^ mainHelper left ^ ") && " ^ mainHelper right
+          | false, true -> mainHelper left ^ " && (" ^ mainHelper right ^ ")"
+          | false, false -> mainHelper left ^ " && " ^ mainHelper right
+        )
+        | Ast.Or -> (
+          match (Common.checkIfAndOperatorPresent left, Common.checkIfAndOperatorPresent right) with
+          | true, true -> "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
+          | true, false -> "(" ^ mainHelper left ^ ") || " ^ mainHelper right
+          | false, true -> mainHelper left ^ " || (" ^ mainHelper right ^ ")"
+          | false, false -> mainHelper left ^ " || " ^ mainHelper right
+        )
+        | _ -> failwith "Invalid operator"
+            
+    and  mainHelper (exp : Ast.expression) : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
@@ -125,47 +159,13 @@ module Expressions = struct
           Common.primitiveToString varType ^ " " ^ id ^ (Common.binaryToString op)^ mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
-          let multDiv left op right =
-            match (Common.checkIfSubAdd left, Common.checkIfSubAdd right) with
-            | true, true ->
-                "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right
-                ^ ")"
-            | true, false ->
-                "(" ^ mainHelper left ^ ") " ^ op ^ " " ^ mainHelper right
-            | false, true ->
-                mainHelper left ^ " " ^ op ^ " (" ^ mainHelper right ^ ")"
-            | false, false ->
-                mainHelper left ^ " " ^ op ^ " " ^ mainHelper right
-          in
           match op with
           | Ast.Add -> mainHelper left ^ " + " ^ mainHelper right
           | Ast.Multiply -> multDiv left "*" right
           | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
           | Ast.Divide -> multDiv left "/" right
-          | Ast.And -> (
-              match
-                ( Common.checkIfOrOperatorPresent left,
-                  Common.checkIfOrOperatorPresent right )
-              with
-              | true, true ->
-                  "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
-              | true, false ->
-                  "(" ^ mainHelper left ^ ") && " ^ mainHelper right
-              | false, true ->
-                  mainHelper left ^ " && (" ^ mainHelper right ^ ")"
-              | false, false -> mainHelper left ^ " && " ^ mainHelper right)
-          | Ast.Or -> (
-              match
-                ( Common.checkIfAndOperatorPresent left,
-                  Common.checkIfAndOperatorPresent right )
-              with
-              | true, true ->
-                  "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
-              | true, false ->
-                  "(" ^ mainHelper left ^ ") || " ^ mainHelper right
-              | false, true ->
-                  mainHelper left ^ " || (" ^ mainHelper right ^ ")"
-              | false, false -> mainHelper left ^ " || " ^ mainHelper right)
+          | Ast.And -> andOrPemdas left right op 
+          | Ast.Or -> andOrPemdas left right op 
           | Ast.Equal -> mainHelper left ^ " == " ^ mainHelper right
           | Ast.NotEqual -> mainHelper left ^ " != " ^ mainHelper right
           | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
