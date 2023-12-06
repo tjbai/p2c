@@ -1,4 +1,5 @@
 open OUnit2
+open Core
 open Ast
 open Lex
 open Parse
@@ -471,7 +472,7 @@ let test_conditionals _ =
           body = [ Continue ];
         };
     ]
-  @@ toast "if i < 10 and True and (2+3<5):\n\tcontinue";
+  @@ to_ast "if i < 10 and True and (2+3<5):\n\tcontinue";
 
   assert_equal
     [
@@ -505,7 +506,7 @@ let test_conditionals _ =
             ];
         };
     ]
-  @@ toast
+  @@ to_ast
        "if True:\n\
         \tprint('true')\n\
         elif False:\n\
@@ -564,7 +565,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ toast
+  @@ to_ast
        "for i in range(10):\n\
         \tif i < 5:\n\
         \t\tprint(i)\n\
@@ -603,7 +604,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ toast
+  @@ to_ast
        "def foo(a: int):\n\
         \tfor i in range(a):\n\
         \t\tprint(i)\n\
@@ -665,7 +666,7 @@ let test_nested_blocks _ =
         Expression
           (CoreFunctionCall { name = Print; arguments = [ Identifier "tot" ] });
       ]
-  @@ toast
+  @@ to_ast
        "\n\
         def solve(n: int) -> int:\n\
         \treturn n/2\n\n\n\

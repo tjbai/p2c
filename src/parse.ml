@@ -247,7 +247,8 @@ and parse (ts : token list) : a_context =
   aux ts []
 
 (* string -> ast *)
-let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
+let to_ast (s : string) : ast =
+  match s |> tokenize |> parse with ast, _ -> ast
 
 (***********************************************************************************************)
 
@@ -281,7 +282,17 @@ let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
         aux (Function { r with body = aux [] body } :: acc) tl
     | Return e :: tl -> aux (Return (f e) :: acc) tl
     | For ({ value; lower; upper; increment; body } as r) :: tl ->
-        aux (For { r with body = aux [] body } :: acc) tl
+        aux
+          (For
+             {
+               r with
+               lower = f lower;
+               upper = f upper;
+               increment = f increment;
+               body = aux [] body;
+             }
+          :: acc)
+          tl
     | While { test; body } :: tl ->
         aux (While { test = f test; body = aux [] body } :: acc) tl
     | If { test; body } :: tl ->
