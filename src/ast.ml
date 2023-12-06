@@ -33,7 +33,6 @@ type expression =
       t : primitive;
       value : expression;
       operator : binaryOp option;
-      isdef : bool;
     }
   | BinaryOp of { operator : binaryOp; left : expression; right : expression }
   | UnaryOp of { operator : unaryOp; operand : expression }

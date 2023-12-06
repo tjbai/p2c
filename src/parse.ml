@@ -133,11 +133,11 @@ let rec parse_expression (ts : token list) : e_context =
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       let operator = None in
-      (Assignment { name; t = Unknown; value; operator; isdef = false }, tl)
+      (Assignment { name; t = Unknown; value; operator }, tl)
   | Value name :: Bop op :: Assign :: tl ->
       let value, tl = parse_expression tl in
       let operator = Some (map_bop op) in
-      (Assignment { name; t = Unknown; value; operator; isdef = false }, tl)
+      (Assignment { name; t = Unknown; value; operator }, tl)
   | _ -> aux ts [] []
 
 (* Parse everything after `name(` *)
@@ -251,11 +251,56 @@ let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
 
 (***********************************************************************************************)
 
+(* Apply f to every expression in an expression, plus itself *)
+let deep_apply (e : expression) ~(f : expression -> expression) : expression =
+  let rec aux (e : expression) : expression =
+    (match e with
+    | Assignment ({ name; t; value; operator } as r) ->
+        Assignment { r with value = aux value }
+    | BinaryOp ({ operator; left; right } as r) ->
+        BinaryOp { r with left = aux left; right = aux right }
+    | UnaryOp ({ operator; operand } as r) ->
+        UnaryOp { r with operand = aux operand }
+    | FunctionCall ({ name; arguments } as r) ->
+        FunctionCall { r with arguments = List.map arguments ~f:aux }
+    | CoreFunctionCall ({ name; arguments } as r) ->
+        CoreFunctionCall { r with arguments = List.map arguments ~f:aux }
+    | e -> e)
+    |> f
+  in
+  aux e
+
+(* Apply f to every expression in the ast *)
+let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
+  let f = deep_apply ~f in
+  let rec aux (acc : ast) (ast : ast) : ast =
+    match ast with
+    | [] -> List.rev acc
+    | Expression e :: tl -> aux (Expression (f e) :: acc) tl
+    | Function ({ name; parameters; return; body } as r) :: tl ->
+        aux (Function { r with body = aux [] body } :: acc) tl
+    | Return e :: tl -> aux (Return (f e) :: acc) tl
+    | For ({ value; lower; upper; increment; body } as r) :: tl ->
+        aux (For { r with body = aux [] body } :: acc) tl
+    | While { test; body } :: tl ->
+        aux (While { test = f test; body = aux [] body } :: acc) tl
+    | If { test; body } :: tl ->
+        aux (If { test = f test; body = aux [] body } :: acc) tl
+    | Elif { test; body } :: tl ->
+        aux (Elif { test = f test; body = aux [] body } :: acc) tl
+    | Else { body } :: tl -> aux (Else { body = aux [] body } :: acc) tl
+    | ((Pass | Break | Continue) as hd) :: tl -> aux (hd :: acc) tl
+  in
+  aux [] ast
+
 (* Try to figure out the type of an assignment *)
 let infer_types (ast : ast) : ast = []
 
-(* Figure out what assignments are actually definitions *)
-let resolve_scopes (ast : ast) : ast = []
-
 (* Look at every UnaryOp between neg and an IntLiteral *)
-let fill_in_negs (ast : ast) : ast = []
+let fill_in_negs (ast : ast) : ast =
+  let f (e : expression) : expression =
+    match e with
+    | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
+    | _ -> e
+  in
+  ast |> map_ast_expressions ~f
