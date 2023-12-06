@@ -87,6 +87,27 @@ module Common = struct
           | _ -> helper tl acc)
     in
     helper expList ""
+
+
+    let binaryToString (op : Ast.binaryOp option) : string =
+      match  op with
+      | Some op -> (
+        match op with
+        | Ast.Add -> "+"
+        | Ast.Multiply -> "*"
+        | Ast.Subtract -> "-"
+        | Ast.Divide -> "/"
+        | Ast.And -> "&&"
+        | Ast.Or -> "||"
+        | Ast.Equal -> "=="
+        | Ast.NotEqual -> "!="
+        | Ast.Lt -> "<"
+        | Ast.Lte -> "<="
+        | Ast.Gt -> ">"
+        | Ast.Gte -> ">="
+        | Ast.Mod -> "%"
+      )
+      | None -> "="  
 end
 
 module Expressions = struct
@@ -100,8 +121,8 @@ module Expressions = struct
       | Ast.BooleanLiteral b -> Common.convertBoolToString b
       | Ast.Identifier i -> i
       (*Assignments*)
-      | Ast.Assignment { name = id; value = exp; t = varType } ->
-          Common.primitiveToString varType ^ " " ^ id ^ " = " ^ mainHelper exp
+      | Ast.Assignment { name = id; value = exp; t = varType; operator = op} ->
+          Common.primitiveToString varType ^ " " ^ id ^ (Common.binaryToString op)^ mainHelper exp
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           let multDiv left op right =
@@ -150,7 +171,9 @@ module Expressions = struct
           | Ast.Lt -> mainHelper left ^ " < " ^ mainHelper right
           | Ast.Lte -> mainHelper left ^ " <= " ^ mainHelper right
           | Ast.Gt -> mainHelper left ^ " > " ^ mainHelper right
-          | Ast.Gte -> mainHelper left ^ " >= " ^ mainHelper right)
+          | Ast.Gte -> mainHelper left ^ " >= " ^ mainHelper right
+          | Ast.Mod -> mainHelper left ^ " % " ^ mainHelper right
+          )
       (*Unary Operations*)
       | Ast.UnaryOp { operator = op; operand = exp } -> (
           match op with Ast.Not -> "!(" ^ mainHelper exp ^ ")")
