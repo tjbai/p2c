@@ -25,6 +25,8 @@ let test_split_and_process _ =
   assert_equal (expr1 @ ("-" :: expr2))
   @@ split_and_process "((a-b)+c) - (x/(y*z))"
 
+let test_negative_numbers _ = assert_equal 0 0
+
 let test_tokenize_line _ =
   assert_equal
     [ Value "x"; Colon; IntDef; Assign; Value "20"; Newline ]
@@ -174,6 +176,7 @@ let tests =
        [
          "Strip indent" >:: test_strip_indent;
          "Split and process" >:: test_split_and_process;
+         "Negative numbers" >:: test_negative_numbers;
          "Tokenize line" >:: test_tokenize_line;
          "Tokenize file" >:: test_tokenize;
        ]

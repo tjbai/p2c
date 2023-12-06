@@ -59,7 +59,6 @@ let strip_indent (s : string) : string * int =
 
 (* Split line into whitespace-separated tokens,
    separate values from operators and other semantics *)
-(* NOTE: This is not elegant, possible point of failure *)
 let split_and_process (s : string) : string list =
   let seps = [ "("; ")"; ","; ":" ] @ binary_ops in
 
@@ -119,7 +118,15 @@ let tokenize_line (line : string list) : token list =
         in
         aux (next_token :: acc) tl
   in
-  aux [] line
+
+  let rec join_uops (acc : token list) (ts : token list) =
+    match ts with
+    | [] -> ts
+    | ((Value _ | Rparen) as hd) :: tl -> join_uops (hd :: acc) tl
+    | _ -> failwith "incomplete"
+  in
+
+  line |> aux [] |> join_uops []
 
 let tokenize (file : string) : token list =
   let init = ([], 0) in
