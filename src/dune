@@ -22,9 +22,20 @@
 (library
  (name codegen)
  (modules codegen)
- (libraries core ast))
+ (libraries core ast)
+ (preprocess
+  (pps ppx_jane bisect_ppx)))
+
+; (library
+;  (name convert)
+;  (modules convert)
+;  (libraries core core_kernel core_unix.command_unix ast lex parse codegen)
+;  (preprocess
+;   (pps ppx_let ppx_jane bisect_ppx)))
 
 (executable
- (name p2c)
- (modules p2c)
- (libraries core))
+ (name convert)
+ (modules convert)
+ (libraries core core_kernel core_unix.command_unix ast lex parse codegen)
+ (preprocess
+  (pps ppx_let ppx_jane bisect_ppx)))
