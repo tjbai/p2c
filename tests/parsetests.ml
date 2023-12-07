@@ -4,11 +4,9 @@ open Ast
 open Lex
 open Parse
 
-(* string -> expression *)
 let toe (s : string) : expression =
   match s |> tokenize |> parse_expression with e, _ -> e
 
-(* string -> statement *)
 let tos (s : string) : statement =
   match s |> tokenize |> parse_statement with s, _ -> s
 
@@ -704,8 +702,8 @@ let test_nested_blocks _ =
 let test_postprocessing _ =
   let code = "i = -1\nprint(i)" in
   let raw_ast = to_raw_ast code in
-  let replace_negs = map_ast_expressions ~f:replace_neg in
-  let _infer_types = map_ast_expressions ~f:infer_type in
+  let replace_negs = map_expressions ~f:replace_neg in
+  let _infer_types = map_expressions ~f:infer_type in
 
   assert_equal (IntLiteral (-1))
   @@ replace_neg (UnaryOp { operator = Neg; operand = IntLiteral 1 });

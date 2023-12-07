@@ -283,7 +283,7 @@ let deep_apply (e : expression) ~(f : expression -> expression) : expression =
   aux e
 
 (* Apply f to every expression in the ast *)
-let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
+let map_expressions (ast : ast) ~(f : expression -> expression) : ast =
   let f = deep_apply ~f in
   let rec aux (acc : ast) (ast : ast) : ast =
     match ast with
@@ -315,7 +315,27 @@ let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
   in
   aux [] ast
 
-let infer_type (e : expression) : expression = e
+(* Fold over all the statements in an ast, pre-order traversal *)
+let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
+  match ast with
+  | [] -> init
+  | hd :: tl -> (
+      let init = f init hd in
+      match hd with
+      | Function { name; parameters; return; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | For { value; lower; upper; increment; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | While { test; body } | If { test; body } | Elif { test; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | Else { body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | _ -> fold_statements tl ~init ~f)
+
+let infer_type (e : expression) : expression =
+  match e with
+  | Assignment { name; t = Unknown; value; operator = None } -> e
+  | _ -> e
 
 let replace_neg (e : expression) : expression =
   match e with
@@ -329,5 +349,5 @@ let to_raw_ast (s : string) : ast =
 (* string -> processed ast *)
 let to_ast (s : string) : ast =
   s |> to_raw_ast
-  |> map_ast_expressions ~f:replace_neg
-  |> map_ast_expressions ~f:infer_type
+  |> map_expressions ~f:replace_neg
+  |> map_expressions ~f:infer_type
