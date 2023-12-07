@@ -1,13 +1,12 @@
 open OUnit2
+open Core
 open Ast
 open Lex
 open Parse
 
-(* string -> expression *)
 let toe (s : string) : expression =
   match s |> tokenize |> parse_expression with e, _ -> e
 
-(* string -> statement *)
 let tos (s : string) : statement =
   match s |> tokenize |> parse_statement with s, _ -> s
 
@@ -65,6 +64,37 @@ let test_simple_expressions _ =
   @@ toe "2 / 3";
 
   assert_equal
+    (Assignment
+       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
+  @@ toe "i += 1";
+
+  assert_equal
+    (Assignment { name = "i"; t = Int; value = IntLiteral 1; operator = None })
+  @@ toe "i: int = 1";
+
+  assert_equal
+    (Assignment
+       {
+         name = "i";
+         t = Int;
+         value =
+           BinaryOp
+             { operator = Add; left = IntLiteral 1; right = IntLiteral 2 };
+         operator = None;
+       })
+  @@ toe "i: int = 1 + 2";
+
+  assert_equal
+    (Assignment
+       {
+         name = "i";
+         t = String;
+         value = StringLiteral "hello world";
+         operator = None;
+       })
+  @@ toe "i: string = \"hello world\"";
+
+  assert_equal
     (BinaryOp
        {
          operator = And;
@@ -97,11 +127,6 @@ let test_simple_expressions _ =
          operator = None;
        })
   @@ toe "helloword = \"hello\" + \'world\'";
-
-  assert_equal
-    (Assignment
-       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
-  @@ toe "i += 1";
 
   assert_equal
     (BinaryOp
@@ -471,7 +496,7 @@ let test_conditionals _ =
           body = [ Continue ];
         };
     ]
-  @@ toast "if i < 10 and True and (2+3<5):\n\tcontinue";
+  @@ to_ast "if i < 10 and True and (2+3<5):\n\tcontinue";
 
   assert_equal
     [
@@ -505,7 +530,7 @@ let test_conditionals _ =
             ];
         };
     ]
-  @@ toast
+  @@ to_ast
        "if True:\n\
         \tprint('true')\n\
         elif False:\n\
@@ -564,7 +589,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ toast
+  @@ to_ast
        "for i in range(10):\n\
         \tif i < 5:\n\
         \t\tprint(i)\n\
@@ -603,7 +628,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ toast
+  @@ to_ast
        "def foo(a: int):\n\
         \tfor i in range(a):\n\
         \t\tprint(i)\n\
@@ -665,7 +690,7 @@ let test_nested_blocks _ =
         Expression
           (CoreFunctionCall { name = Print; arguments = [ Identifier "tot" ] });
       ]
-  @@ toast
+  @@ to_ast
        "\n\
         def solve(n: int) -> int:\n\
         \treturn n/2\n\n\n\
@@ -673,6 +698,40 @@ let test_nested_blocks _ =
         for line in range(10):\n\
         \ti = i + solve(line)\n\n\
         print(tot)"
+
+let test_postprocessing _ =
+  let code = "i = -1\nprint(i)" in
+  let raw_ast = to_raw_ast code in
+  let replace_negs = map_expressions ~f:replace_neg in
+  let _infer_types = map_expressions ~f:infer_type in
+
+  assert_equal (IntLiteral (-1))
+  @@ replace_neg (UnaryOp { operator = Neg; operand = IntLiteral 1 });
+
+  assert_equal
+    [
+      Expression
+        (Assignment
+           {
+             name = "i";
+             t = Unknown;
+             value = UnaryOp { operator = Neg; operand = IntLiteral 1 };
+             operator = None;
+           });
+      Expression
+        (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
+    ]
+  @@ raw_ast;
+
+  assert_equal
+    [
+      Expression
+        (Assignment
+           { name = "i"; t = Unknown; value = IntLiteral (-1); operator = None });
+      Expression
+        (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
+    ]
+  @@ replace_negs raw_ast
 
 let tests =
   "Parse tests"
@@ -689,6 +748,7 @@ let tests =
          "While loop" >:: test_while_loops;
          "Conditionals" >:: test_conditionals;
          "Nested blocks and complete programs" >:: test_nested_blocks;
+         "Post-processing" >:: test_postprocessing;
        ]
 
 let () = run_test_tt_main tests

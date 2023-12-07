@@ -11,8 +11,9 @@ type s_context = statement * token list
 type a_context = ast * token list
 type params = (string * primitive) list
 
-(* For matching against invariants the type system can't catch *)
 let impossible () = failwith "reaching this case should be impossible"
+
+(***********************************************************************************************)
 
 let literal (s : string) : expression =
   match (s, int_of_string_opt s) with
@@ -24,7 +25,7 @@ let literal (s : string) : expression =
   | _, None -> Identifier s
 
 let map_uop (s : string) : unaryOp =
-  match s with "not" -> Not | _ -> failwith "invalid unary op"
+  match s with "not" -> Not | "-" -> Neg | _ -> failwith "invalid unary op"
 
 let map_bop (s : string) : binaryOp =
   match s with
@@ -53,7 +54,6 @@ let map_t (t : token) : primitive =
   | BoolDef -> Boolean
   | _ -> Unknown
 
-(* Operator precedence *)
 let prec (op : binaryOp) : int =
   match op with
   | Equal | NotEqual -> 0
@@ -61,6 +61,7 @@ let prec (op : binaryOp) : int =
   | Add | Subtract -> 2
   | Multiply | Divide | Mod -> 3
 
+(* Find the matching closing character for an opener *)
 let find_closure (ts : token list) ~l ~r : token list * token list =
   let rec aux acc tl (need : int) =
     match tl with
@@ -70,9 +71,9 @@ let find_closure (ts : token list) ~l ~r : token list * token list =
     | hd :: tl -> aux (hd :: acc) tl need
     | [] -> failwith "no closure on malformed expression"
   in
-
   aux [] ts 1
 
+(* Special cases *)
 let find_rparen = find_closure ~l:Lparen ~r:Rparen
 let find_dedent = find_closure ~l:Indent ~r:Dedent
 
@@ -88,27 +89,11 @@ let split_on (t : token) (ts : token list) : token list list =
   in
   aux ts [] []
 
-(* Parse everything after name(... *)
-let rec parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
-  let rec parse_arguments tl (args : expression list) : expression list =
-    match tl with
-    | [] -> List.rev args
-    | Comma :: tl -> parse_arguments tl args
-    | _ ->
-        let arg, tl = parse_expression tl in
-        parse_arguments tl (arg :: args)
-  in
+(***********************************************************************************************)
 
-  let args, tl = find_rparen tl in
-  let arguments = parse_arguments args [] in
-  ( (match map_fn fn with
-    | A name -> CoreFunctionCall { name; arguments }
-    | B name -> FunctionCall { name; arguments }),
-    tl )
-
-(* This version of parse_expression implements the
-    shunting-yard algorithm to properly handle operator precedence *)
-and parse_expression (ts : token list) : e_context =
+(* Parse a single expression *)
+let rec parse_expression (ts : token list) : e_context =
+  (* Implements shunting yard algorithm for operator precedence *)
   let rec aux ts (es : expression list) (ops : binaryOp list) =
     match ts with
     (* function *)
@@ -145,25 +130,50 @@ and parse_expression (ts : token list) : e_context =
   in
 
   match ts with
+  (* Assignment, no type annotation *)
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
-      (Assignment { name; t = Unknown; value; operator = None }, tl)
+      let operator = None in
+      (Assignment { name; t = Unknown; value; operator }, tl)
   | Value name :: Bop op :: Assign :: tl ->
       let value, tl = parse_expression tl in
-      (Assignment { name; t = Unknown; value; operator = Some (map_bop op) }, tl)
+      let operator = Some (map_bop op) in
+      (Assignment { name; t = Unknown; value; operator }, tl)
+  (* Assignment, w/ type annotation *)
+  | Value name :: Colon :: ((IntDef | StringDef | BoolDef) as t) :: tl -> (
+      let t = map_t t in
+      match tl with
+      | Assign :: tl ->
+          let value, tl = parse_expression tl in
+          let operator = None in
+          (Assignment { name; t; value; operator }, tl)
+      | Bop op :: Assign :: tl ->
+          let value, tl = parse_expression tl in
+          let operator = Some (map_bop op) in
+          (Assignment { name; t; value; operator }, tl)
+      | _ -> failwith "type annotation not followed by assignment")
+  (* Not assignment *)
   | _ -> aux ts [] []
 
-(* Parse everything after `def name(` *)
-let parse_fn_def (ts : token list) : params * primitive * token list =
-  let rec aux tl (ps : params) (ret_t : primitive) =
+(* Parse everything after `name(` *)
+and parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
+  let rec parse_arguments tl (args : expression list) : expression list =
     match tl with
-    | Value name :: Colon :: t :: tl -> aux tl ((name, map_t t) :: ps) ret_t
-    | Colon :: Newline :: Indent :: tl -> (List.rev ps, ret_t, tl)
-    | Arrow :: t :: tl -> aux tl ps (map_t t)
-    | (Comma | Rparen) :: tl -> aux tl ps ret_t
-    | _ -> failwith "malformed function declaration"
+    | [] -> List.rev args
+    | Comma :: tl -> parse_arguments tl args
+    | _ ->
+        let arg, tl = parse_expression tl in
+        parse_arguments tl (arg :: args)
   in
-  aux ts [] Void
+
+  let args, tl = find_rparen tl in
+  let arguments = parse_arguments args [] in
+  ( (match map_fn fn with
+    | A name -> CoreFunctionCall { name; arguments }
+    | B name -> FunctionCall { name; arguments }),
+    tl )
+
+(***********************************************************************************************)
 
 (* Parse a single statement *)
 let rec parse_statement (ts : token list) : s_context =
@@ -186,7 +196,19 @@ let rec parse_statement (ts : token list) : s_context =
       let expression, tl = parse_expression ts in
       (Expression expression, tl)
 
-(* Parse everything after for _ in range(... *)
+(* Parse everything after `def name(` *)
+and parse_fn_def (ts : token list) : params * primitive * token list =
+  let rec aux tl (ps : params) (ret_t : primitive) =
+    match tl with
+    | Value name :: Colon :: t :: tl -> aux tl ((name, map_t t) :: ps) ret_t
+    | Colon :: Newline :: Indent :: tl -> (List.rev ps, ret_t, tl)
+    | Arrow :: t :: tl -> aux tl ps (map_t t)
+    | (Comma | Rparen) :: tl -> aux tl ps ret_t
+    | _ -> failwith "malformed function declaration"
+  in
+  aux ts [] Void
+
+(* Parse everything after `for _ in range(` *)
 and parse_for (ts : token list) (value : string) : s_context =
   let fn_call, tl = parse_fn_call ts in
   match tl with
@@ -210,7 +232,7 @@ and parse_for (ts : token list) (value : string) : s_context =
       | _ -> failwith "malformed iterator")
   | _ -> failwith "malformed for loop"
 
-(* Parse everything after while ... *)
+(* Parse everything after `while` *)
 and parse_conditional (ts : token list) (c : token) : s_context =
   let test, tl = parse_expression ts in
   match tl with
@@ -223,6 +245,7 @@ and parse_conditional (ts : token list) (c : token) : s_context =
       | _ -> impossible ())
   | _ -> failwith "malformed while loop"
 
+(* Grab all the statements in a fixed scope *)
 and parse_body (ts : token list) : a_context =
   let body_ts, tl = find_dedent ts in
   match parse body_ts with body, _ -> (body, tl)
@@ -238,6 +261,93 @@ and parse (ts : token list) : a_context =
   in
   aux ts []
 
-(* string -> ast *)
-let toast (s : string) : ast = match s |> tokenize |> parse with ast, _ -> ast
-let infer_types (ast : ast) : ast = []
+(***********************************************************************************************)
+
+(* Apply f to every expression in an expression, plus itself *)
+let deep_apply (e : expression) ~(f : expression -> expression) : expression =
+  let rec aux (e : expression) : expression =
+    (match e with
+    | Assignment ({ name; t; value; operator } as r) ->
+        Assignment { r with value = aux value }
+    | BinaryOp ({ operator; left; right } as r) ->
+        BinaryOp { r with left = aux left; right = aux right }
+    | UnaryOp ({ operator; operand } as r) ->
+        UnaryOp { r with operand = aux operand }
+    | FunctionCall ({ name; arguments } as r) ->
+        FunctionCall { r with arguments = List.map arguments ~f:aux }
+    | CoreFunctionCall ({ name; arguments } as r) ->
+        CoreFunctionCall { r with arguments = List.map arguments ~f:aux }
+    | e -> e)
+    |> f
+  in
+  aux e
+
+(* Apply f to every expression in the ast *)
+let map_expressions (ast : ast) ~(f : expression -> expression) : ast =
+  let f = deep_apply ~f in
+  let rec aux (acc : ast) (ast : ast) : ast =
+    match ast with
+    | [] -> List.rev acc
+    | Expression e :: tl -> aux (Expression (f e) :: acc) tl
+    | Function ({ name; parameters; return; body } as r) :: tl ->
+        aux (Function { r with body = aux [] body } :: acc) tl
+    | Return e :: tl -> aux (Return (f e) :: acc) tl
+    | While { test; body } :: tl ->
+        aux (While { test = f test; body = aux [] body } :: acc) tl
+    | If { test; body } :: tl ->
+        aux (If { test = f test; body = aux [] body } :: acc) tl
+    | Elif { test; body } :: tl ->
+        aux (Elif { test = f test; body = aux [] body } :: acc) tl
+    | Else { body } :: tl -> aux (Else { body = aux [] body } :: acc) tl
+    | ((Pass | Break | Continue) as hd) :: tl -> aux (hd :: acc) tl
+    | For ({ value; lower; upper; increment; body } as r) :: tl ->
+        aux
+          (For
+             {
+               r with
+               lower = f lower;
+               upper = f upper;
+               increment = f increment;
+               body = aux [] body;
+             }
+          :: acc)
+          tl
+  in
+  aux [] ast
+
+(* Fold over all the statements in an ast, pre-order traversal *)
+let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
+  match ast with
+  | [] -> init
+  | hd :: tl -> (
+      let init = f init hd in
+      match hd with
+      | Function { name; parameters; return; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | For { value; lower; upper; increment; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | While { test; body } | If { test; body } | Elif { test; body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | Else { body } ->
+          fold_statements tl ~init:(fold_statements body ~init ~f) ~f
+      | _ -> fold_statements tl ~init ~f)
+
+let infer_type (e : expression) : expression =
+  match e with
+  | Assignment { name; t = Unknown; value; operator = None } -> e
+  | _ -> e
+
+let replace_neg (e : expression) : expression =
+  match e with
+  | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
+  | _ -> e
+
+(* string -> raw ast *)
+let to_raw_ast (s : string) : ast =
+  match s |> tokenize |> parse with ast, _ -> ast
+
+(* string -> processed ast *)
+let to_ast (s : string) : ast =
+  s |> to_raw_ast
+  |> map_expressions ~f:replace_neg
+  |> map_expressions ~f:infer_type

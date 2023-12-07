@@ -21,7 +21,7 @@ type binaryOp =
   | Gte
 [@@deriving sexp]
 
-type unaryOp = Not [@@deriving sexp]
+type unaryOp = Not | Neg [@@deriving sexp]
 
 type expression =
   | IntLiteral of int

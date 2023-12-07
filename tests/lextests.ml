@@ -25,6 +25,50 @@ let test_split_and_process _ =
   assert_equal (expr1 @ ("-" :: expr2))
   @@ split_and_process "((a-b)+c) - (x/(y*z))"
 
+let test_negation _ =
+  assert_equal
+    [ Value "1"; Bop "-"; Value "2"; Newline ]
+    ("1-2" |> split_and_process |> tokenize_line);
+
+  assert_equal
+    [ Value "10"; Bop "-"; Value "2"; Bop "-"; Value "1"; Newline ]
+    ("10-2-1" |> split_and_process |> tokenize_line);
+
+  assert_equal
+    [
+      Lparen;
+      Value "10";
+      Bop "-";
+      Value "2";
+      Rparen;
+      Bop "+";
+      Uop "-";
+      Value "1";
+      Newline;
+    ]
+    ("(10-2) + -1" |> split_and_process |> tokenize_line);
+
+  assert_equal
+    [ Value "i"; Assign; Uop "-"; Value "1"; Newline ]
+    ("i = -1" |> split_and_process |> tokenize_line);
+
+  assert_equal
+    [
+      Value "i";
+      Assign;
+      Uop "-";
+      Lparen;
+      Value "10";
+      Bop "-";
+      Value "2";
+      Rparen;
+      Bop "+";
+      Uop "-";
+      Value "1";
+      Newline;
+    ]
+    ("i = -(10-2) + -1" |> split_and_process |> tokenize_line)
+
 let test_tokenize_line _ =
   assert_equal
     [ Value "x"; Colon; IntDef; Assign; Value "20"; Newline ]
@@ -174,6 +218,7 @@ let tests =
        [
          "Strip indent" >:: test_strip_indent;
          "Split and process" >:: test_split_and_process;
+         "Negative numbers" >:: test_negation;
          "Tokenize line" >:: test_tokenize_line;
          "Tokenize file" >:: test_tokenize;
        ]
