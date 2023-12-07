@@ -65,7 +65,20 @@ let strip_indent (s : string) : string * int =
 let split_and_process (s : string) : string list =
   let seps = [ "("; ")"; ","; ":" ] @ binary_ops in
 
-  (* Separate values from operators and semantics *)
+  let rec close_string (acc : string) (tl : string list) =
+    if
+      Char.(
+        acc.[String.length acc - 1] = '\'' || acc.[String.length acc - 1] = '\"')
+    then (acc, tl)
+    else
+      match tl with
+      | s :: tl ->
+          let n = String.length s in
+          if Char.(s.[n - 1] = '\'' || s.[n - 1] = '\"') then (acc ^ " " ^ s, tl)
+          else close_string (acc ^ " " ^ s) tl
+      | [] -> failwith "unmatched string in lex"
+  in
+
   let rec separate (s : string) (acc : string list) l r : string list =
     if r = String.length s then slice s l r :: acc |> List.rev
     else if List.mem seps (String.make 1 s.[r]) ~equal:String.( = ) then
@@ -73,11 +86,13 @@ let split_and_process (s : string) : string list =
     else separate s acc l (r + 1)
   in
 
-  (* Address combination symbols like -> *)
   let rec join (acc : string list) (l : string list) =
     match l with
     | [] -> List.rev acc
     | x :: y :: tl when String.(x = "-" && y = ">") -> join ("->" :: acc) tl
+    | hd :: tl when Char.(hd.[0] = '\'' || hd.[0] = '\"') ->
+        let string, tl = close_string hd tl in
+        join (string :: acc) tl
     | hd :: tl -> join (hd :: acc) tl
   in
 

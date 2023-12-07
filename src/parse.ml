@@ -130,6 +130,7 @@ let rec parse_expression (ts : token list) : e_context =
   in
 
   match ts with
+  (* Assignment, no type annotation *)
   | Value name :: Assign :: tl ->
       let value, tl = parse_expression tl in
       let operator = None in
@@ -138,6 +139,20 @@ let rec parse_expression (ts : token list) : e_context =
       let value, tl = parse_expression tl in
       let operator = Some (map_bop op) in
       (Assignment { name; t = Unknown; value; operator }, tl)
+  (* Assignment, w/ type annotation *)
+  | Value name :: Colon :: ((IntDef | StringDef | BoolDef) as t) :: tl -> (
+      let t = map_t t in
+      match tl with
+      | Assign :: tl ->
+          let value, tl = parse_expression tl in
+          let operator = None in
+          (Assignment { name; t; value; operator }, tl)
+      | Bop op :: Assign :: tl ->
+          let value, tl = parse_expression tl in
+          let operator = Some (map_bop op) in
+          (Assignment { name; t; value; operator }, tl)
+      | _ -> failwith "type annotation not followed by assignment")
+  (* Not assignment *)
   | _ -> aux ts [] []
 
 (* Parse everything after `name(` *)
@@ -302,7 +317,11 @@ let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
 
 (* Try to figure out the type of an assignment *)
 let infer_types (ast : ast) : ast =
-  let f (e : expression) : expression = e in
+  let f (e : expression) : expression =
+    match e with
+    | Assignment { name; t = Unknown; value; operator = None } -> e
+    | e -> e
+  in
   ast |> map_ast_expressions ~f
 
 (* Look at every UnaryOp between neg and an IntLiteral *)

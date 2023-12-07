@@ -66,6 +66,37 @@ let test_simple_expressions _ =
   @@ toe "2 / 3";
 
   assert_equal
+    (Assignment
+       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
+  @@ toe "i += 1";
+
+  assert_equal
+    (Assignment { name = "i"; t = Int; value = IntLiteral 1; operator = None })
+  @@ toe "i: int = 1";
+
+  assert_equal
+    (Assignment
+       {
+         name = "i";
+         t = Int;
+         value =
+           BinaryOp
+             { operator = Add; left = IntLiteral 1; right = IntLiteral 2 };
+         operator = None;
+       })
+  @@ toe "i: int = 1 + 2";
+
+  assert_equal
+    (Assignment
+       {
+         name = "i";
+         t = String;
+         value = StringLiteral "hello world";
+         operator = None;
+       })
+  @@ toe "i: string = \"hello world\"";
+
+  assert_equal
     (BinaryOp
        {
          operator = And;
@@ -98,11 +129,6 @@ let test_simple_expressions _ =
          operator = None;
        })
   @@ toe "helloword = \"hello\" + \'world\'";
-
-  assert_equal
-    (Assignment
-       { name = "i"; t = Unknown; value = IntLiteral 1; operator = Some Add })
-  @@ toe "i += 1";
 
   assert_equal
     (BinaryOp
@@ -675,6 +701,35 @@ let test_nested_blocks _ =
         \ti = i + solve(line)\n\n\
         print(tot)"
 
+let test_postprocessing _ =
+  let code = "i = -1\nprint(i)" in
+  let raw_ast = to_raw_ast code in
+
+  assert_equal
+    [
+      Expression
+        (Assignment
+           {
+             name = "i";
+             t = Unknown;
+             value = UnaryOp { operator = Neg; operand = IntLiteral 1 };
+             operator = None;
+           });
+      Expression
+        (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
+    ]
+  @@ raw_ast;
+
+  assert_equal
+    [
+      Expression
+        (Assignment
+           { name = "i"; t = Unknown; value = IntLiteral (-1); operator = None });
+      Expression
+        (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
+    ]
+  @@ fill_in_negs raw_ast
+
 let tests =
   "Parse tests"
   >: test_list
@@ -690,6 +745,7 @@ let tests =
          "While loop" >:: test_while_loops;
          "Conditionals" >:: test_conditionals;
          "Nested blocks and complete programs" >:: test_nested_blocks;
+         "Post-processing" >:: test_postprocessing;
        ]
 
 let () = run_test_tt_main tests

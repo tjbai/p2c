@@ -25,6 +25,6 @@
  (libraries core ast))
 
 (executable
- (name convert)
- (modules convert)
+ (name p2c)
+ (modules p2c)
  (libraries core))
