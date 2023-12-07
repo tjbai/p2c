@@ -4,13 +4,13 @@
 Conversion of Python files to C/C++
 
 #### Checkpoint 
-**What's been Impelemented** 
+**What's been Implemented** 
 
-We've implemented functionality for parsing, lexing, and converting the AST trees to C code. 
+We've implemented functionality for lexing, parsing, and converting the AST trees to C code. 
 
-To test, run `dune test` (all tests should pass)
+To test, run `dune test` (all tests should pass).
 
-Or run `run.sh` to automatically test, get coverage, and build the project
+Or, run `run.sh` to automatically test, get coverage, and build the project.
 
 **Next steps** 
 
