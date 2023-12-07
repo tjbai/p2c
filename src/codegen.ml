@@ -177,7 +177,8 @@ module Expressions = struct
       | Ast.UnaryOp { operator = op; operand = exp } -> (
           match op with
           | Ast.Not -> "!(" ^ mainHelper exp ^ ")"
-          | Ast.Neg -> "-(" ^ mainHelper exp ^ ")")
+          | Ast.Neg -> "-(" ^ mainHelper exp ^ ")"
+        )
       (*Functional Calls*)
       | Ast.FunctionCall { name = id; arguments = expList } ->
           let args = List.map expList ~f:mainHelper in

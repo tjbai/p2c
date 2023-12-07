@@ -34,7 +34,7 @@ let run_ops (listOfFiles:string list) =
     | [] -> ()
     | currentFile::t -> 
       let outputFileC = renamePyFileToC currentFile in
-      let content = FileIO.readFile currentFile |> Parse.toast |> Codegen.ConModule.convertToString in 
+      let content = FileIO.readFile currentFile |> Parse.to_ast |> Codegen.ConModule.convertToString in 
       FileIO.writeFile ~output:outputFileC ~input:content;
       helper t
   in helper listOfFiles
