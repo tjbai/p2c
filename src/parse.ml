@@ -332,6 +332,8 @@ let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
           fold_statements tl ~init:(fold_statements body ~init ~f) ~f
       | _ -> fold_statements tl ~init ~f)
 
+(* module DefTypes = Map.Make (String) *)
+
 let infer_type (e : expression) : expression =
   match e with
   | Assignment { name; t = Unknown; value; operator = None } -> e
