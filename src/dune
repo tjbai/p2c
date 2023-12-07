@@ -26,7 +26,16 @@
  (preprocess
   (pps ppx_jane bisect_ppx)))
 
+; (library
+;  (name convert)
+;  (modules convert)
+;  (libraries core core_kernel core_unix.command_unix ast lex parse codegen)
+;  (preprocess
+;   (pps ppx_let ppx_jane bisect_ppx)))
+
 (executable
  (name convert)
  (modules convert)
- (libraries core))
+ (libraries core core_kernel core_unix.command_unix ast lex parse codegen)
+ (preprocess
+  (pps ppx_let ppx_jane bisect_ppx)))
