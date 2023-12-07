@@ -292,6 +292,14 @@ let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
     | Function ({ name; parameters; return; body } as r) :: tl ->
         aux (Function { r with body = aux [] body } :: acc) tl
     | Return e :: tl -> aux (Return (f e) :: acc) tl
+    | While { test; body } :: tl ->
+        aux (While { test = f test; body = aux [] body } :: acc) tl
+    | If { test; body } :: tl ->
+        aux (If { test = f test; body = aux [] body } :: acc) tl
+    | Elif { test; body } :: tl ->
+        aux (Elif { test = f test; body = aux [] body } :: acc) tl
+    | Else { body } :: tl -> aux (Else { body = aux [] body } :: acc) tl
+    | ((Pass | Break | Continue) as hd) :: tl -> aux (hd :: acc) tl
     | For ({ value; lower; upper; increment; body } as r) :: tl ->
         aux
           (For
@@ -304,38 +312,22 @@ let map_ast_expressions (ast : ast) ~(f : expression -> expression) : ast =
              }
           :: acc)
           tl
-    | While { test; body } :: tl ->
-        aux (While { test = f test; body = aux [] body } :: acc) tl
-    | If { test; body } :: tl ->
-        aux (If { test = f test; body = aux [] body } :: acc) tl
-    | Elif { test; body } :: tl ->
-        aux (Elif { test = f test; body = aux [] body } :: acc) tl
-    | Else { body } :: tl -> aux (Else { body = aux [] body } :: acc) tl
-    | ((Pass | Break | Continue) as hd) :: tl -> aux (hd :: acc) tl
   in
   aux [] ast
 
-(* Try to figure out the type of an assignment *)
-let infer_types (ast : ast) : ast =
-  let f (e : expression) : expression =
-    match e with
-    | Assignment { name; t = Unknown; value; operator = None } -> e
-    | e -> e
-  in
-  ast |> map_ast_expressions ~f
+let infer_type (e : expression) : expression = e
 
-(* Look at every UnaryOp between neg and an IntLiteral *)
-let fill_in_negs (ast : ast) : ast =
-  let f (e : expression) : expression =
-    match e with
-    | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
-    | _ -> e
-  in
-  ast |> map_ast_expressions ~f
+let replace_neg (e : expression) : expression =
+  match e with
+  | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
+  | _ -> e
 
 (* string -> raw ast *)
 let to_raw_ast (s : string) : ast =
   match s |> tokenize |> parse with ast, _ -> ast
 
 (* string -> processed ast *)
-let to_ast (s : string) : ast = s |> to_raw_ast |> fill_in_negs |> infer_types
+let to_ast (s : string) : ast =
+  s |> to_raw_ast
+  |> map_ast_expressions ~f:replace_neg
+  |> map_ast_expressions ~f:infer_type

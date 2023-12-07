@@ -9,5 +9,5 @@ val parse : token list -> ast * token list
 val to_raw_ast : string -> ast
 val to_ast : string -> ast
 val map_ast_expressions : ast -> f:(expression -> expression) -> ast
-val infer_types : ast -> ast
-val fill_in_negs : ast -> ast
+val infer_type : expression -> expression
+val replace_neg : expression -> expression
