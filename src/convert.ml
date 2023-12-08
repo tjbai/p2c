@@ -25,7 +25,7 @@ let run_ops (listOfFiles : string list) =
     match listOfFiles with
     | [] -> ()
     | currentFile :: t ->
-        let outputFileC = renamePyFileToC currentFile in
+        let outputFileC = "./"^renamePyFileToC currentFile in
         let content =
           Stdio.printf "%s\n" (FileIO.readFile currentFile);
           FileIO.readFile currentFile
