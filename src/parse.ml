@@ -283,8 +283,9 @@ let deep_apply (e : expression) ~(f : expression -> expression) : expression =
   aux e
 
 (* Apply f to every expression in the ast *)
-let map_expressions (ast : ast) ~(f : expression -> expression) : ast =
-  let f = deep_apply ~f in
+let map_expressions (ast : ast) ~(f : expression -> expression) ~(deep : bool) :
+    ast =
+  let f = if deep then deep_apply ~f else f in
   let rec aux (acc : ast) (ast : ast) : ast =
     match ast with
     | [] -> List.rev acc
@@ -336,6 +337,9 @@ let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
 
 type primitive_tbl = (string, primitive) Core.Hashtbl.t
 
+let add (tbl : primitive_tbl) (key : string) (data : primitive) : unit =
+  match Hashtbl.add tbl ~key ~data with _ -> ()
+
 let init_tbl (ast : ast) : primitive_tbl =
   fold_statements ast
     ~init:(Hashtbl.create (module String))
@@ -343,13 +347,41 @@ let init_tbl (ast : ast) : primitive_tbl =
       match el with
       | Function { name; parameters; return = Unknown | Void; body } -> acc
       | Function { name; parameters; return; body } ->
-          Hashtbl.add_exn acc ~key:name ~data:return;
+          add acc name return;
           acc
       | _ -> acc)
 
 let infer_type ~(tbl : primitive_tbl) (e : expression) : expression =
+  (* Naive way to reconcile mismatched leaf types *)
+  let reconcile a b : primitive option =
+    match (a, b) with
+    | Some at, Some bt when equal_primitive at bt -> Some at
+    | Some String, Some _ | Some _, Some String -> Some String
+    | Some Int, Some _ | Some _, Some Int -> Some Int
+    | _ -> Some Boolean
+  in
+
+  (* DFS to leaves, and merge types *)
+  let rec dfs e : primitive option =
+    match e with
+    | IntLiteral _ -> Some Int
+    | StringLiteral _ -> Some String
+    | BooleanLiteral _ -> Some Boolean
+    | UnaryOp { operator; operand } -> dfs operand
+    | BinaryOp { operator; left; right } -> reconcile (dfs left) (dfs right)
+    | FunctionCall { name; arguments } -> Hashtbl.find tbl name
+    | Identifier name -> Hashtbl.find tbl name
+    | _ -> None
+  in
+
+  (* Match against assignments with unknown type *)
   match e with
-  | Assignment { name; t = Unknown; value; operator = None } -> e
+  | Assignment ({ name; t = Unknown; value; operator = None } as r) -> (
+      match dfs value with
+      | Some t ->
+          add tbl name t;
+          Assignment { r with t }
+      | None -> e)
   | _ -> e
 
 let replace_neg (e : expression) : expression =
@@ -364,7 +396,6 @@ let to_raw_ast (s : string) : ast =
 (* string -> processed ast *)
 let to_ast (s : string) : ast =
   let raw_ast = to_raw_ast s in
-
   raw_ast
-  |> map_expressions ~f:replace_neg
-  |> map_expressions ~f:(infer_type ~tbl:(init_tbl raw_ast))
+  |> map_expressions ~f:replace_neg ~deep:true
+  |> map_expressions ~f:(infer_type ~tbl:(init_tbl raw_ast)) ~deep:false

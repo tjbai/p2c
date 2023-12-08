@@ -702,7 +702,7 @@ let test_nested_blocks _ =
 let test_postprocessing _ =
   let code = "i = -1\nprint(i)" in
   let raw_ast = to_raw_ast code in
-  let replace_negs = map_expressions ~f:replace_neg in
+  let replace_negs = map_expressions ~f:replace_neg ~deep:true in
 
   assert_equal (IntLiteral (-1))
   @@ replace_neg (UnaryOp { operator = Neg; operand = IntLiteral 1 });
@@ -738,7 +738,10 @@ let _raw_ast =
    def foo(a: string, b: string):\n\
    \tprint(a, b)\n\n\
    def concatenate(a: string, b: string) -> string:\n\
-   \treturn a + b"
+   \treturn a + b\n\n\
+   a = 2 + solve(3)\n\
+   b = 2 + (3 - 4)\n\
+   c = a + b"
 
 let tests =
   "Parse tests"
