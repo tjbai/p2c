@@ -3,20 +3,20 @@
 ################## UNCOMMENT BELOW FOR TESTING ###############################
 
 # Cleans the project
-dune clean 
+# dune clean 
 
-# Builds
-cd src
-dune build
+# # Builds
+# cd src
+# dune build
 
-# test files
-files="./testPythonFiles/sample1.py"
+# # test files
+# files="./testPythonFiles/sample1.py"
 
-# Runs the tests
-location=$(../_build/default/src/convert.exe $files)
-echo $location
+# # Runs the tests
+# location=$(../_build/default/src/convert.exe $files)
+# echo $location
 
-cd ..
+# cd ..
 
 ################## UNCOMMENT BELOW FOR COVERAGE AND PACKAGING ##################
 # Cleans the project
