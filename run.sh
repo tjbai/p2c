@@ -13,7 +13,7 @@ dune build
 files="./testPythonFiles/sample1.py"
 
 # Runs the tests
-location=$(/home/john/Documents/proj/_build/default/src/convert.exe $files)
+location=$(../_build/default/src/convert.exe $files)
 echo $location
 
 cd ..
