@@ -12,8 +12,11 @@ val parse : token list -> ast * token list
 val to_raw_ast : string -> ast
 val to_ast : string -> ast
 
+type primitive_tbl = (string, primitive) Core.Hashtbl.t
+
 (* post-processing *)
 val fold_statements : ast -> init:'a -> f:('a -> statement -> 'a) -> 'a
-val map_expressions : ast -> f:(expression -> expression) -> ast
-val infer_type : expression -> expression
+val map_expressions : ast -> f:(expression -> expression) -> deep:bool -> ast
+val init_tbl : ast -> primitive_tbl
+val infer_type : tbl:primitive_tbl -> expression -> expression
 val replace_neg : expression -> expression

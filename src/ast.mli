@@ -1,5 +1,9 @@
-type primitive = Int | String | Boolean | Void | Unknown (* primitive types *)
-type coreIdentifier = Print | Input (* core functions *)
+(* primitive types *)
+type primitive = Int | String | Boolean | Void | Unknown
+[@@deriving sexp, equal]
+
+(* core functions *)
+type coreIdentifier = Print | Input [@@derivint sexp]
 
 (* binary operations *)
 type binaryOp =
@@ -16,8 +20,9 @@ type binaryOp =
   | Lte
   | Gt
   | Gte
+[@@deriving sexp]
 
-type unaryOp = Not | Neg
+type unaryOp = Not | Neg [@@deriving sexp]
 
 type expression =
   | IntLiteral of int

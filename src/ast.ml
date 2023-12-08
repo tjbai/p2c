@@ -1,6 +1,8 @@
-open Sexplib.Std (* need for string_of_sexp *)
+open Sexplib.Std
 
-type primitive = Int | String | Boolean | Void | Unknown [@@deriving sexp]
+type primitive = Int | String | Boolean | Void | Unknown
+[@@deriving sexp, equal]
+
 type identifier = string [@@deriving sexp]
 type coreIdentifier = Print | Input [@@deriving sexp]
 
