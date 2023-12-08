@@ -1,4 +1,4 @@
-open Sexplib.Std (* need for string_of_sexp *)
+open Sexplib.Std
 
 type primitive = Int | String | Boolean | Void | Unknown [@@deriving sexp]
 type identifier = string [@@deriving sexp]

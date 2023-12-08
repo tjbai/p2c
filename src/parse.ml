@@ -332,9 +332,22 @@ let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
           fold_statements tl ~init:(fold_statements body ~init ~f) ~f
       | _ -> fold_statements tl ~init ~f)
 
-(* module DefTypes = Map.Make (String) *)
+(* CAUTION: MUTATION *)
 
-let infer_type (e : expression) : expression =
+type primitive_tbl = (string, primitive) Core.Hashtbl.t
+
+let init_tbl (ast : ast) : primitive_tbl =
+  fold_statements ast
+    ~init:(Hashtbl.create (module String))
+    ~f:(fun acc el ->
+      match el with
+      | Function { name; parameters; return = Unknown | Void; body } -> acc
+      | Function { name; parameters; return; body } ->
+          Hashtbl.add_exn acc ~key:name ~data:return;
+          acc
+      | _ -> acc)
+
+let infer_type ~(tbl : primitive_tbl) (e : expression) : expression =
   match e with
   | Assignment { name; t = Unknown; value; operator = None } -> e
   | _ -> e
@@ -350,6 +363,8 @@ let to_raw_ast (s : string) : ast =
 
 (* string -> processed ast *)
 let to_ast (s : string) : ast =
-  s |> to_raw_ast
+  let raw_ast = to_raw_ast s in
+
+  raw_ast
   |> map_expressions ~f:replace_neg
-  |> map_expressions ~f:infer_type
+  |> map_expressions ~f:(infer_type ~tbl:(init_tbl raw_ast))
