@@ -178,6 +178,7 @@ and parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
 (* Parse a single statement *)
 let rec parse_statement (ts : token list) : s_context =
   match ts with
+  | Value "import" :: Value m :: tl -> (Import m, tl)
   | FunDef :: Value name :: Lparen :: tl ->
       let parameters, return, tl = parse_fn_def tl in
       let body, tl = parse_body tl in
@@ -313,6 +314,7 @@ let map_expressions (ast : ast) ~(f : expression -> expression) ~(deep : bool) :
              }
           :: acc)
           tl
+    | hd :: tl -> aux (hd :: acc) tl
   in
   aux [] ast
 
@@ -389,6 +391,17 @@ let replace_neg (e : expression) : expression =
   | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
   | _ -> e
 
+let gather_main (ast : ast) : ast =
+  let body, stripped_ast =
+    List.partition_tf ast ~f:(fun s ->
+        match s with
+        | Expression _ | If _ | Elif _ | Else _ -> true
+        | _ -> false)
+  in
+
+  stripped_ast
+  @ [ Function { name = "main"; parameters = []; return = Int; body } ]
+
 (* string -> raw ast *)
 let to_raw_ast (s : string) : ast =
   match s |> tokenize |> parse with ast, _ -> ast
@@ -399,3 +412,4 @@ let to_ast (s : string) : ast =
   raw_ast
   |> map_expressions ~f:replace_neg ~deep:true
   |> map_expressions ~f:(infer_type ~tbl:(init_tbl raw_ast)) ~deep:false
+  |> gather_main

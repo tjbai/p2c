@@ -44,6 +44,7 @@ type expression =
 
 type statement =
   | Expression of expression
+  | Import of string
   | Function of {
       name : string;
       parameters : (string * primitive) list;
