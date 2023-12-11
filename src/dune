@@ -10,7 +10,7 @@
  (modules lex)
  (libraries core)
  (preprocess
-  (pps ppx_jane)))
+  (pps ppx_jane bisect_ppx)))
 
 (library
  (name parse)
@@ -25,6 +25,7 @@
  (libraries core ast codegenutil)
  (preprocess
   (pps ppx_jane bisect_ppx)))
+
 
 (library
  (name codegenutil)

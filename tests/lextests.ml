@@ -71,6 +71,24 @@ let test_negation _ =
 
 let test_tokenize_line _ =
   assert_equal
+    [ Hash; Value "hello"; Value "test"; Value "goodbye"; Newline ]
+    ("# hello test goodbye" |> split_and_process |> tokenize_line);
+
+  assert_equal
+    [
+      Value "i";
+      Assign;
+      Value "0";
+      Hash;
+      Value "i";
+      Value "is";
+      Value "an";
+      Value "integer";
+      Newline;
+    ]
+    ("i = 0 # i is an integer" |> split_and_process |> tokenize_line);
+
+  assert_equal
     [ Value "x"; Colon; IntDef; Assign; Value "20"; Newline ]
     ("x: int = 20" |> split_and_process |> tokenize_line);
 

@@ -43,6 +43,7 @@ type expression =
 
 type statement =
   | Expression of expression
+  | Import of string
   | Function of {
       name : string;
       parameters : (string * primitive) list;
@@ -61,6 +62,7 @@ type statement =
   | If of { test : expression; body : statement list }
   | Elif of { test : expression; body : statement list }
   | Else of { body : statement list }
+  | Comment of string
   | Pass
   | Break
   | Continue

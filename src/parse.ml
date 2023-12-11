@@ -89,6 +89,14 @@ let split_on (t : token) (ts : token list) : token list list =
   in
   aux ts [] []
 
+(* Concatenate remaining strings in a line  *)
+let gather_strings (ts : token list) : string * token list =
+  let rec aux (acc : string) (tl : token list) =
+    match tl with Value s :: tl -> aux (acc ^ " " ^ s) tl | _ -> (acc, tl)
+  in
+  let string, tl = aux "" ts in
+  (String.sub string ~pos:1 ~len:(String.length string - 1), tl)
+
 (***********************************************************************************************)
 
 (* Parse a single expression *)
@@ -178,6 +186,10 @@ and parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
 (* Parse a single statement *)
 let rec parse_statement (ts : token list) : s_context =
   match ts with
+  | Value "import" :: Value m :: tl -> (Import m, tl)
+  | Hash :: tl ->
+      let s, tl = gather_strings tl in
+      (Comment s, tl)
   | FunDef :: Value name :: Lparen :: tl ->
       let parameters, return, tl = parse_fn_def tl in
       let body, tl = parse_body tl in
@@ -313,6 +325,7 @@ let map_expressions (ast : ast) ~(f : expression -> expression) ~(deep : bool) :
              }
           :: acc)
           tl
+    | hd :: tl -> aux (hd :: acc) tl
   in
   aux [] ast
 
@@ -345,10 +358,17 @@ let init_tbl (ast : ast) : primitive_tbl =
     ~init:(Hashtbl.create (module String))
     ~f:(fun acc el ->
       match el with
-      | Function { name; parameters; return = Unknown | Void; body } -> acc
       | Function { name; parameters; return; body } ->
-          add acc name return;
-          acc
+          if equal_primitive return Unknown || equal_primitive return Void then
+            acc
+          else (
+            add acc name return;
+            acc)
+      | Expression (Assignment { name; t; value; operator }) ->
+          if equal_primitive t Unknown || equal_primitive t Void then acc
+          else (
+            add acc name t;
+            acc)
       | _ -> acc)
 
 let infer_type ~(tbl : primitive_tbl) (e : expression) : expression =
@@ -389,6 +409,17 @@ let replace_neg (e : expression) : expression =
   | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
   | _ -> e
 
+let gather_main (ast : ast) : ast =
+  let body, stripped_ast =
+    List.partition_tf ast ~f:(fun s ->
+        match s with
+        | Expression _ | If _ | Elif _ | Else _ -> true
+        | _ -> false)
+  in
+
+  stripped_ast
+  @ [ Function { name = "main"; parameters = []; return = Int; body } ]
+
 (* string -> raw ast *)
 let to_raw_ast (s : string) : ast =
   match s |> tokenize |> parse with ast, _ -> ast
@@ -399,3 +430,4 @@ let to_ast (s : string) : ast =
   raw_ast
   |> map_expressions ~f:replace_neg ~deep:true
   |> map_expressions ~f:(infer_type ~tbl:(init_tbl raw_ast)) ~deep:false
+  |> gather_main

@@ -29,6 +29,7 @@ type token =
   | Indent
   | Dedent
   | Newline
+  | Hash
 [@@deriving equal, sexp]
 
 val strip_indent : string -> string * int

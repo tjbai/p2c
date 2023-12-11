@@ -29,6 +29,7 @@ type token =
   | Indent
   | Dedent
   | Newline
+  | Hash
 [@@deriving equal, sexp]
 
 (* Constants *)
@@ -105,12 +106,13 @@ let split_and_process (s : string) : string list =
 (* Convert processed line to token types *)
 (* NOTE: Maybe  _parse_ some relevant values here? *)
 let tokenize_line (line : string list) : token list =
-  let rec aux (acc : token list) (rem : string list) =
+  let rec aux (acc : token list) (comment : bool) (rem : string list) =
     match rem with
     | [] -> List.rev (Newline :: acc)
     | hd :: tl ->
         let next_token =
           match hd with
+          | _ when comment -> Value hd
           | "=" -> Assign
           | "def" -> FunDef
           | "->" -> Arrow
@@ -130,11 +132,13 @@ let tokenize_line (line : string list) : token list =
           | ")" -> Rparen
           | "," -> Comma
           | ":" -> Colon
+          | "#" -> Hash
           | _ when List.mem binary_ops hd ~equal:String.( = ) -> Bop hd
           | _ when List.mem unary_ops hd ~equal:String.( = ) -> Uop hd
           | _ -> Value hd (* Either identifier or primitive *)
         in
-        aux (next_token :: acc) tl
+
+        aux (next_token :: acc) (comment || equal_token next_token Hash) tl
   in
 
   let rec join_uops (acc : token list) (ts : token list) =
@@ -146,7 +150,7 @@ let tokenize_line (line : string list) : token list =
     | hd :: tl -> join_uops (hd :: acc) tl
   in
 
-  line |> aux [] |> join_uops []
+  line |> aux [] false |> join_uops []
 
 let tokenize (file : string) : token list =
   let init = ([], 0) in
