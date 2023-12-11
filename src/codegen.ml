@@ -12,8 +12,8 @@ module Expressions = struct
     (*multiplication and division*)
     let rec multDiv left op right =
       match
-        ( Codegenutil.CodegenUtil.Common.checkIfSubAdd left,
-          Codegenutil.CodegenUtil.Common.checkIfSubAdd right )
+        ( Codegenutil.Common.checkIfSubAdd left,
+          Codegenutil.Common.checkIfSubAdd right )
       with
       | true, true ->
           "(" ^ mainHelper left ^ ") " ^ op ^ " (" ^ mainHelper right ^ ")"
@@ -28,8 +28,8 @@ module Expressions = struct
       match op with
       | Ast.And -> (
           match
-            ( Codegenutil.CodegenUtil.Common.checkIfOrOperatorPresent left,
-              Codegenutil.CodegenUtil.Common.checkIfOrOperatorPresent right )
+            ( Codegenutil.Common.checkIfOrOperatorPresent left,
+              Codegenutil.Common.checkIfOrOperatorPresent right )
           with
           | true, true ->
               "(" ^ mainHelper left ^ ") && (" ^ mainHelper right ^ ")"
@@ -38,8 +38,8 @@ module Expressions = struct
           | false, false -> mainHelper left ^ " && " ^ mainHelper right)
       | Ast.Or -> (
           match
-            ( Codegenutil.CodegenUtil.Common.checkIfAndOperatorPresent left,
-              Codegenutil.CodegenUtil.Common.checkIfAndOperatorPresent right )
+            ( Codegenutil.Common.checkIfAndOperatorPresent left,
+              Codegenutil.Common.checkIfAndOperatorPresent right )
           with
           | true, true ->
               "(" ^ mainHelper left ^ ") || (" ^ mainHelper right ^ ")"
@@ -51,20 +51,19 @@ module Expressions = struct
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
-      | Ast.BooleanLiteral b ->
-          Codegenutil.CodegenUtil.Common.convertBoolToString b
+      | Ast.BooleanLiteral b -> Codegenutil.Common.convertBoolToString b
       | Ast.Identifier i -> i
       (*Assignments*)
       | Ast.Assignment { name = id; value = exp; t = varType; operator = op } ->
-          if Codegenutil.CodegenUtil.Common.is_variable_declared id then
+          if Codegenutil.Common.is_variable_declared id then
             id ^ " "
-            ^ Codegenutil.CodegenUtil.Common.binaryToString op
+            ^ Codegenutil.Common.binaryToString op
             ^ " " ^ mainHelper exp
           else (
-            Codegenutil.CodegenUtil.Common.declare_variable id;
-            Codegenutil.CodegenUtil.Common.primitiveToString varType
+            Codegenutil.Common.declare_variable id;
+            Codegenutil.Common.primitiveToString varType
             ^ " " ^ id ^ " "
-            ^ Codegenutil.CodegenUtil.Common.binaryToString op
+            ^ Codegenutil.Common.binaryToString op
             ^ " " ^ mainHelper exp)
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
@@ -97,13 +96,13 @@ module Expressions = struct
           match id with
           | Print ->
               "printf("
-              ^ Codegenutil.CodegenUtil.Common.getReturnType main_tree expList
+              ^ Codegenutil.Common.getReturnType main_tree expList
               ^ ", "
               ^ String.concat ~sep:", " args
               ^ ")"
           | Input ->
               "scanf("
-              ^ Codegenutil.CodegenUtil.Common.getReturnType main_tree expList
+              ^ Codegenutil.Common.getReturnType main_tree expList
               ^ ", "
               ^ String.concat ~sep:",&" args
               ^ ")")
@@ -135,11 +134,11 @@ module ConModule : CodeGen = struct
   let convertToString (main_tree : Ast.statement list) : string =
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
-      Codegenutil.CodegenUtil.Common.clearHashTable ();
+      Codegenutil.Common.clearHashTable ();
       numberOfTabs countTabs
-      ^ Codegenutil.CodegenUtil.Common.primitiveToString prim
+      ^ Codegenutil.Common.primitiveToString prim
       ^ " " ^ name ^ "("
-      ^ Codegenutil.CodegenUtil.Common.convertArgsListString args
+      ^ Codegenutil.Common.convertArgsListString args
       ^ "){\n"
       ^ helper stateList "" (countTabs + 1)
       ^ "}"
@@ -246,9 +245,9 @@ module GenerateHeader : CodeGen = struct
         ->
           helper tl
             (acc
-            ^ Codegenutil.CodegenUtil.Common.primitiveToString prim
+            ^ Codegenutil.Common.primitiveToString prim
             ^ " " ^ name ^ "("
-            ^ Codegenutil.CodegenUtil.Common.convertArgsListString args
+            ^ Codegenutil.Common.convertArgsListString args
             ^ ");\n")
       | _ :: tl -> helper tl acc
     in
