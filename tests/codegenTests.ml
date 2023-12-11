@@ -5,7 +5,6 @@ open OUnit2
 (***************************** Expression tests **************************************)
 let additionOnly =
   [
-
     Ast.Expression (Ast.Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
     Ast.Expression (Ast.Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
     Ast.Expression (Ast.Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
@@ -31,89 +30,38 @@ let additionOnly =
          });
   ]
 
-let addSubMix =
-  [
-    Ast.Expression
-      (BinaryOp
-         {
-           operator = Ast.Subtract;
-           left =
-             BinaryOp
-               {
-                 operator = Ast.Add;
-                 left = Identifier "a";
-                 right = Identifier "b";
-               };
-           right =
-             BinaryOp
-               {
-                 operator = Ast.Add;
-                 left = Identifier "c";
-                 right = Identifier "d";
-               };
-         });
-  ]
+  let addMult_1 =
+    [
+      Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression
+        (BinaryOp
+           {
+             operator = Ast.Multiply;
+             left =
+               BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "a";
+                   right = Identifier "b";
+                 };
+             right =
+               BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "c";
+                   right = Identifier "d";
+                 };
+           });
+    ]
 
-let addMult_1 =
-  [
-    Ast.Expression
-      (BinaryOp
-         {
-           operator = Ast.Multiply;
-           left =
-             BinaryOp
-               {
-                 operator = Ast.Add;
-                 left = Identifier "a";
-                 right = Identifier "b";
-               };
-           right =
-             BinaryOp
-               {
-                 operator = Ast.Add;
-                 left = Identifier "c";
-                 right = Identifier "d";
-               };
-         });
-  ]
-
-let addMult_2 =
-  [
-    Ast.Expression
-      (BinaryOp
-         {
-           operator = Ast.Multiply;
-           left =
-             BinaryOp
-               {
-                 operator = Ast.Multiply;
-                 left =
-                   BinaryOp
-                     {
-                       operator = Ast.Add;
-                       left = Identifier "a";
-                       right = Identifier "b";
-                     };
-                 right = Identifier "b";
-               };
-           right =
-             BinaryOp
-               {
-                 operator = Ast.Add;
-                 left = Identifier "c";
-                 right =
-                   BinaryOp
-                     {
-                       operator = Ast.Multiply;
-                       left = Identifier "c";
-                       right = Identifier "d";
-                     };
-               };
-         });
-  ]
 
 let mult_1 =
   [
+    Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
     Ast.Expression
       (BinaryOp
          {
@@ -123,31 +71,105 @@ let mult_1 =
          });
   ]
 
-let multDiv =
-  [
-    Ast.Expression
-      (BinaryOp
-         {
-           operator = Ast.Divide;
-           left =
-             BinaryOp
-               {
-                 operator = Ast.Multiply;
-                 left = Identifier "a";
-                 right = Identifier "b";
-               };
-           right =
-             BinaryOp
+  let addMult_2 =
+    [
+      Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression(Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Ast.Expression
+        (BinaryOp
+           {
+             operator = Ast.Multiply;
+             left =
+               BinaryOp
+                 {
+                   operator = Ast.Multiply;
+                   left =
+                     BinaryOp
+                       {
+                         operator = Ast.Add;
+                         left = Identifier "a";
+                         right = Identifier "b";
+                       };
+                   right = Identifier "b";
+                 };
+             right =
+               BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "c";
+                   right =
+                     BinaryOp
+                       {
+                         operator = Ast.Multiply;
+                         left = Identifier "c";
+                         right = Identifier "d";
+                       };
+                 };
+           });
+    ]
+    let addSubMix =
+      [
+        Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+        Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+        Ast.Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+        Ast.Expression(Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
+        Ast.Expression
+          (BinaryOp
+             {
+               operator = Ast.Subtract;
+               left =
+                 BinaryOp
+                   {
+                     operator = Ast.Add;
+                     left = Identifier "a";
+                     right = Identifier "b";
+                   };
+               right =
+                 BinaryOp
+                   {
+                     operator = Ast.Add;
+                     left = Identifier "c";
+                     right = Identifier "d";
+                   };
+             });
+      ]
+    
+      let multDiv =
+        [
+          Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+          Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+          Ast.Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+          Ast.Expression(Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
+          Ast.Expression
+            (BinaryOp
                {
                  operator = Ast.Divide;
-                 left = Identifier "c";
-                 right = Identifier "d";
-               };
-         });
-  ]
+                 left =
+                   BinaryOp
+                     {
+                       operator = Ast.Multiply;
+                       left = Identifier "a";
+                       right = Identifier "b";
+                     };
+                 right =
+                   BinaryOp
+                     {
+                       operator = Ast.Divide;
+                       left = Identifier "c";
+                       right = Identifier "d";
+                     };
+               });
+        ]
+
 
 let multDivAddSub =
   [
+    Ast.Expression(Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression(Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
     Ast.Expression
       (BinaryOp
          {
@@ -183,6 +205,10 @@ let multDivAddSub =
 
 let and_or =
   [
+    Ast.Expression(Assignment {name = "e"; value = BooleanLiteral true; t = Ast.Boolean; operator = None});
+    Ast.Expression(Assignment {name = "f"; value = BooleanLiteral false; t = Ast.Boolean; operator = None});
+    Ast.Expression(Assignment {name = "g"; value = BooleanLiteral true; t = Ast.Boolean; operator = None});
+    Ast.Expression(Assignment {name = "h"; value = BooleanLiteral false; t = Ast.Boolean; operator = None});
     Ast.Expression
       (BinaryOp
          {
@@ -191,30 +217,29 @@ let and_or =
              BinaryOp
                {
                  operator = Ast.Or;
-                 left = Identifier "a";
-                 right = Identifier "b";
+                 left = Identifier "e";
+                 right = Identifier "f";
                };
            right =
              BinaryOp
                {
                  operator = Ast.Or;
-                 left = Identifier "c";
-                 right = Identifier "d";
+                 left = Identifier "g";
+                 right = Identifier "h";
                };
          });
-  ]
+  ] 
 
 let expression_1 _ =
-  assert_equal "a + b + c + d;\n" @@ ConModule.convertToString additionOnly;
-  assert_equal "(a + b) * (c + d);\n" @@ ConModule.convertToString addMult_1;
-  assert_equal "a * b;\n" @@ ConModule.convertToString mult_1;
-  assert_equal "(a + b) * b * (c + c * d);\n"
-  @@ ConModule.convertToString addMult_2;
-  assert_equal "a + b - c + d;\n" @@ ConModule.convertToString addSubMix;
-  assert_equal "a * b / c / d;\n" @@ ConModule.convertToString multDiv;
-  assert_equal "a * b / b + c - c / d;\n"
+  assert_equal "int a = 5;\nint b = 5;\nint c = 5;\nint d = 5;\na + b + c + d;\n" @@ ConModule.convertToString additionOnly;
+  assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\n(a + b) * (c + d);\n" @@ ConModule.convertToString addMult_1;
+  assert_equal "a = 5;\nb = 5;\na * b;\n" @@ ConModule.convertToString mult_1;
+  assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\n(a + b) * b * (c + c * d);\n" @@ ConModule.convertToString addMult_2;
+  assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na + b - c + d;\n" @@ ConModule.convertToString addSubMix;
+  assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na * b / c / d;\n" @@ ConModule.convertToString multDiv;
+  assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na * b / b + c - c / d;\n"
   @@ ConModule.convertToString multDivAddSub;
-  assert_equal "(a || b) && (c || d);\n" @@ ConModule.convertToString and_or
+  assert_equal "bool e = True;\nbool f = False;\nbool g = True;\nbool h = False;\n(e || f) && (g || h);\n"@@ ConModule.convertToString and_or
 
 let multplicationExpression = [ Ast.Expression (BinaryOp { operator = Ast.Multiply; left = IntLiteral 5; right = IntLiteral 5; }) ]
 let divisionExpression = [ Ast.Expression (BinaryOp { operator = Ast.Divide; left = IntLiteral 5; right = IntLiteral 5; }) ]
