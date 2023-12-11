@@ -293,8 +293,9 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
+
           helper tl
-            (acc ^ functionToString prim name args stateList countTabs)
+            (acc ^ functionToString prim name args stateList countTabs )
             countTabs
       (*For Loops*)
       | Ast.For { value = id; increment = inc; lower; upper; body = statelist }

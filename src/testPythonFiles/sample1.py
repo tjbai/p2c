@@ -1,3 +1,2 @@
-b = 10
-
-a = b + 4
+def main(a: int, b: int) -> int:
+    return a + b
