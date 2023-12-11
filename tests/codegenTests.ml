@@ -493,6 +493,41 @@ let coreFuncComplex =
          });
   ]
 
+  let coreFuncComplex_str =
+    [
+      Ast.Function
+        {
+          name = "bar";
+          parameters = [ ("a", Ast.Boolean); ("b", Ast.String) ];
+          return = Ast.String;
+          body =
+            [
+              Expression
+                (BinaryOp
+                   {
+                     operator = Ast.Add;
+                     left = Identifier "a";
+                     right = Identifier "b";
+                   });
+            ];
+        };
+      Ast.Expression
+        (CoreFunctionCall
+           {
+             name = Ast.Print;
+             arguments =
+               [
+                 StringLiteral "hello";
+                 IntLiteral 5;
+                 FunctionCall
+                   {
+                     name = "bar";
+                     arguments = [ BooleanLiteral true; StringLiteral "Cat" ];
+                   };
+               ];
+           });
+    ]
+
 let coreFuncTests _ =
   assert_equal "printf(%s %d , \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
@@ -500,7 +535,11 @@ let coreFuncTests _ =
     "int bar(bool astring b){\n\
      \ta + b;\n\
      }printf(%s %d %d , \"hello\", 5, bar(True, \"Cat\"));\n"
-  @@ ConModule.convertToString coreFuncComplex
+  @@ ConModule.convertToString coreFuncComplex;
+  assert_equal
+    "string bar(bool astring b){\n\
+     \ta + b;\n\
+     }printf(%s %d %s , \"hello\", 5, bar(True, \"Cat\"));\n" @@ ConModule.convertToString coreFuncComplex_str
 
 (***************************** FUNCTIONS *********************************************)
 let function_1 =
