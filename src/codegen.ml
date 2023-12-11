@@ -34,6 +34,37 @@ end
 module Common = struct
   (*HELPER FUNCTIONS*)
 
+  let declared_variables : (string, bool) Hashtbl.t = Hashtbl.create (module String)
+
+  let is_variable_declared id =
+    match Hashtbl.find declared_variables id with
+    | Some _ -> true
+    | None -> false
+
+  let declare_variable id =
+    Hashtbl.add_exn declared_variables ~key:id ~data:true
+(* 
+  let generateMapofVars (tree_list : Ast.statement list) :
+      (string, Ast.primitive) Hashtbl.t =
+    let map = Hashtbl.create (module String) in
+    let rec helper (tree_list : Ast.statement list) : unit =
+      match tree_list with
+      | [] -> ()
+      | Ast.Expression exp :: tl -> (
+          match exp with
+          | Ast.Assignment { name = id; value = _; t = prim; operator = _ } ->
+              Hashtbl.add_exn map ~key:id ~data:prim;
+              helper tl
+          | _ -> helper tl)
+      | _ :: tl -> helper tl
+    in
+    helper tree_list;
+    map *)
+
+  (*CORE FUNCTIONS*)
+
+  (*Core Functions*)
+
   (*check precedence for binary operations*)
   let checkIfSubAdd binaryOp =
     match binaryOp with
@@ -105,7 +136,7 @@ module Common = struct
         | Ast.Gt -> ">"
         | Ast.Gte -> ">="
         | Ast.Mod -> "%")
-    | None -> ""
+    | None -> "="
 end
 
 module Expressions = struct
@@ -152,11 +183,15 @@ module Expressions = struct
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
       | Ast.BooleanLiteral b -> Common.convertBoolToString b
-      | Ast.Identifier i -> i
+      | Ast.Identifier i ->  i
       (*Assignments*)
       | Ast.Assignment { name = id; value = exp; t = varType; operator = op } ->
-          Common.primitiveToString varType
-          ^ " " ^ id ^ Common.binaryToString op ^ " = " ^ mainHelper exp
+          if Common.is_variable_declared id then
+            id ^ " " ^ Common.binaryToString op ^ " " ^ mainHelper exp
+          else (
+            Common.declare_variable id;
+            Common.primitiveToString varType ^ " " ^ id ^ " "
+            ^ Common.binaryToString op ^ " " ^ mainHelper exp)
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with

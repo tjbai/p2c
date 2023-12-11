@@ -5,6 +5,11 @@ open OUnit2
 (***************************** Expression tests **************************************)
 let additionOnly =
   [
+
+    Ast.Expression (Ast.Assignment {name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression (Ast.Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression (Ast.Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+    Ast.Expression (Ast.Assignment {name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None});
     Ast.Expression
       (BinaryOp
          {
@@ -239,15 +244,26 @@ let expression_2 _ =
 
 (***************************** Assignment tests **************************************)
 
-(*addition*)
+(*traditional assignment*)
 let assignment_eg_1 =
   [
     Ast.Expression
       (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
   ]
 
+  (*assignment twice*)
+let assignment_eg_2 =
+  [
+    Ast.Expression
+      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
+      Ast.Expression
+      (Assignment { name = "a"; value = IntLiteral 10; t = Ast.Int; operator = None });
+  ]
+  
+
 let assignment_1 _ =
-  assert_equal "int a = 5;\n" @@ ConModule.convertToString assignment_eg_1
+  assert_equal "int a = 5;\n" @@ ConModule.convertToString assignment_eg_1;
+  assert_equal "int a = 5;\nint 10 = 5;\n" @@ ConModule.convertToString assignment_eg_2
 
 (***************************** Return tests ******************************************)
 
