@@ -211,16 +211,65 @@ let expression_1 _ =
   @@ ConModule.convertToString multDivAddSub;
   assert_equal "(a || b) && (c || d);\n" @@ ConModule.convertToString and_or
 
-let multplicationExpression = [ Ast.Expression (BinaryOp { operator = Ast.Multiply; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let divisionExpression = [ Ast.Expression (BinaryOp { operator = Ast.Divide; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let modExpression = [ Ast.Expression (BinaryOp { operator = Ast.Mod; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let greaterThanExpression = [ Ast.Expression (BinaryOp { operator = Ast.Gt; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let lessThanExpression = [ Ast.Expression (BinaryOp { operator = Ast.Lt; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let greaterThanEqualExpression = [ Ast.Expression (BinaryOp { operator = Ast.Gte; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let lessThanEqualExpression = [ Ast.Expression (BinaryOp { operator = Ast.Lte; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let orExpression = [ Ast.Expression (BinaryOp { operator = Ast.Or; left = IntLiteral 5; right = IntLiteral 5; }) ]
-let andExpression = [ Ast.Expression (BinaryOp { operator = Ast.And; left = IntLiteral 5; right = IntLiteral 5; }) ]
+let multplicationExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Multiply; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
 
+let divisionExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Divide; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let modExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Mod; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let greaterThanExpression =
+  [
+    Ast.Expression
+      (BinaryOp { operator = Ast.Gt; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let lessThanExpression =
+  [
+    Ast.Expression
+      (BinaryOp { operator = Ast.Lt; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let greaterThanEqualExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Gte; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let lessThanEqualExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.Lte; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let orExpression =
+  [
+    Ast.Expression
+      (BinaryOp { operator = Ast.Or; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
+
+let andExpression =
+  [
+    Ast.Expression
+      (BinaryOp
+         { operator = Ast.And; left = IntLiteral 5; right = IntLiteral 5 });
+  ]
 
 let expression_2 _ =
   assert_equal "5 * 5;\n" @@ ConModule.convertToString multplicationExpression;
@@ -228,14 +277,11 @@ let expression_2 _ =
   assert_equal "5 % 5;\n" @@ ConModule.convertToString modExpression;
   assert_equal "5 > 5;\n" @@ ConModule.convertToString greaterThanExpression;
   assert_equal "5 < 5;\n" @@ ConModule.convertToString lessThanExpression;
-  assert_equal "5 >= 5;\n" @@ ConModule.convertToString greaterThanEqualExpression;
+  assert_equal "5 >= 5;\n"
+  @@ ConModule.convertToString greaterThanEqualExpression;
   assert_equal "5 <= 5;\n" @@ ConModule.convertToString lessThanEqualExpression;
   assert_equal "5 || 5;\n" @@ ConModule.convertToString orExpression;
   assert_equal "5 && 5;\n" @@ ConModule.convertToString andExpression
-
-
-
-
 
 (***************************** Assignment tests **************************************)
 
@@ -243,7 +289,8 @@ let expression_2 _ =
 let assignment_eg_1 =
   [
     Ast.Expression
-      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
+      (Assignment
+         { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
   ]
 
 let assignment_1 _ =
@@ -272,9 +319,9 @@ let returnComplex =
          });
   ]
 
-  let pass = [ Ast.Pass ]
-  let continue = [ Ast.Continue ]
-  let break = [ Ast.Break ]
+let pass = [ Ast.Pass ]
+let continue = [ Ast.Continue ]
+let break = [ Ast.Break ]
 
 let controlOperators _ =
   assert_equal "return 5;\n" @@ ConModule.convertToString return_eg_1;
@@ -283,9 +330,6 @@ let controlOperators _ =
   assert_equal "return;\n" @@ ConModule.convertToString pass;
   assert_equal "continue;\n" @@ ConModule.convertToString continue;
   assert_equal "break;\n" @@ ConModule.convertToString break
-
-
-
 
 (***************************** Function Call Tests ***********************************)
 
@@ -491,8 +535,6 @@ let ifElseIfStatement =
       };
   ]
 
-
-
 let testControl _ =
   assert_equal "if(True){\n\ta + b;\n}"
   @@ ConModule.convertToString basicIfStatement;
@@ -551,7 +593,7 @@ let testOrdering _ =
 
 (***************************** LOOPS *************************************************)
 
-let forLoop = 
+let forLoop =
   [
     Ast.For
       {
@@ -572,7 +614,7 @@ let forLoop =
       };
   ]
 
-let whileLoop = 
+let whileLoop =
   [
     Ast.While
       {
@@ -590,11 +632,11 @@ let whileLoop =
       };
   ]
 
-let loopTests _ = 
+let loopTests _ =
   assert_equal "for(int i=0;i<10;i=i+1){\n\ta + b;\n}"
   @@ ConModule.convertToString forLoop;
-  assert_equal "while(True){\n\ta + b;\n}" @@ ConModule.convertToString whileLoop
-
+  assert_equal "while(True){\n\ta + b;\n}"
+  @@ ConModule.convertToString whileLoop
 
 (***************************** UTIL **************************************************)
 
@@ -605,13 +647,13 @@ let codeGenTests =
          "assignment tests" >:: assignment_1;
          "return tests" >:: controlOperators;
          "expression_1" >:: expression_1;
-          "expression_2" >:: expression_2;
+         "expression_2" >:: expression_2;
          "function call tests" >:: functionCall_1;
          "core function tests" >:: coreFuncTests;
          "functions tests" >:: functionTests;
          "control tests" >:: testControl;
          "ordering tests" >:: testOrdering;
-          "loop tests" >:: loopTests;
+         "loop tests" >:: loopTests;
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]

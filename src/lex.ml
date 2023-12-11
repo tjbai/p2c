@@ -54,12 +54,14 @@ let slice (s : string) (l : int) (r : int) : string =
 
 (* Count and remove leading tabs *)
 let strip_indent (s : string) : string * int =
-  let rec aux (rem : string) (i : int) =
-    if String.length rem > 0 && Char.(rem.[0] = '\t') then
-      aux (slice_front rem 1) (i + 1)
-    else (rem, i)
+  let rec aux (rem : string) (tabs : int) (spaces : int) =
+    match rem.[0] with
+    | '\t' -> aux (slice_front rem 1) (tabs + 1) spaces
+    | ' ' when spaces = 3 -> aux (slice_front rem 1) (tabs + 1) 0
+    | ' ' -> aux (slice_front rem 1) tabs (spaces + 1)
+    | _ -> (rem, tabs)
   in
-  aux s 0
+  aux s 0 0
 
 (* Split line into whitespace-separated tokens,
    separate values from operators and other semantics *)

@@ -3,7 +3,7 @@ type primitive = Int | String | Boolean | Void | Unknown
 [@@deriving sexp, equal]
 
 (* core functions *)
-type coreIdentifier = Print | Input [@@derivint sexp]
+type coreIdentifier = Print | Input [@@deriving sexp]
 
 (* binary operations *)
 type binaryOp =

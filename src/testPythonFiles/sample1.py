@@ -1,3 +1,2 @@
-b = 10
-
-a = b + 4
+def main():
+    print('hello')
