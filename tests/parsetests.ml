@@ -496,41 +496,42 @@ let test_conditionals _ =
           body = [ Continue ];
         };
     ]
-  @@ to_ast "if i < 10 and True and (2+3<5):\n\tcontinue";
+  @@ to_raw_ast "if i < 10 and True and (2+3<5):\n\tcontinue";
 
   assert_equal
-    [
-      Ast.If
-        {
-          test = BooleanLiteral true;
-          body =
-            [
-              Expression
-                (CoreFunctionCall
-                   { name = Print; arguments = [ StringLiteral "true" ] });
-            ];
-        };
-      Ast.Elif
-        {
-          test = BooleanLiteral false;
-          body =
-            [
-              Expression
-                (CoreFunctionCall
-                   { name = Print; arguments = [ StringLiteral "false" ] });
-            ];
-        };
-      Ast.Else
-        {
-          body =
-            [
-              Expression
-                (CoreFunctionCall
-                   { name = Print; arguments = [ StringLiteral "else" ] });
-            ];
-        };
-    ]
-  @@ to_ast
+    Ast.
+      [
+        If
+          {
+            test = BooleanLiteral true;
+            body =
+              [
+                Expression
+                  (CoreFunctionCall
+                     { name = Print; arguments = [ StringLiteral "true" ] });
+              ];
+          };
+        Elif
+          {
+            test = BooleanLiteral false;
+            body =
+              [
+                Expression
+                  (CoreFunctionCall
+                     { name = Print; arguments = [ StringLiteral "false" ] });
+              ];
+          };
+        Else
+          {
+            body =
+              [
+                Expression
+                  (CoreFunctionCall
+                     { name = Print; arguments = [ StringLiteral "else" ] });
+              ];
+          };
+      ]
+  @@ to_raw_ast
        "if True:\n\
         \tprint('true')\n\
         elif False:\n\
@@ -589,7 +590,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ to_ast
+  @@ to_raw_ast
        "for i in range(10):\n\
         \tif i < 5:\n\
         \t\tprint(i)\n\
@@ -628,7 +629,7 @@ let test_nested_blocks _ =
               ];
           };
       ]
-  @@ to_ast
+  @@ to_raw_ast
        "def foo(a: int):\n\
         \tfor i in range(a):\n\
         \t\tprint(i)\n\
@@ -690,7 +691,7 @@ let test_nested_blocks _ =
         Expression
           (CoreFunctionCall { name = Print; arguments = [ Identifier "tot" ] });
       ]
-  @@ to_ast
+  @@ to_raw_ast
        "\n\
         def solve(n: int) -> int:\n\
         \treturn n/2\n\n\n\
@@ -699,9 +700,7 @@ let test_nested_blocks _ =
         \ti = i + solve(line)\n\n\
         print(tot)"
 
-let test_postprocessing _ =
-  let code = "i = -1\nprint(i)" in
-  let raw_ast = to_raw_ast code in
+let test_replace_negs _ =
   let replace_negs = map_expressions ~f:replace_neg ~deep:true in
 
   assert_equal (IntLiteral (-1))
@@ -720,7 +719,7 @@ let test_postprocessing _ =
       Expression
         (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
     ]
-  @@ raw_ast;
+  @@ to_raw_ast "i = -1\nprint(i)";
 
   assert_equal
     [
@@ -730,18 +729,66 @@ let test_postprocessing _ =
       Expression
         (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
     ]
-  @@ replace_negs raw_ast
+  @@ ("i = -1\nprint(i)" |> to_raw_ast |> replace_negs)
 
-let _raw_ast =
-  "def solve(i: int) -> int:\n\
-   \treturn i\n\n\
-   def foo(a: string, b: string):\n\
-   \tprint(a, b)\n\n\
-   def concatenate(a: string, b: string) -> string:\n\
-   \treturn a + b\n\n\
-   a = 2 + solve(3)\n\
-   b = 2 + (3 - 4)\n\
-   c = a + b"
+let test_type_inference _ =
+  let processed_ast =
+    to_ast
+      "def solve(i: int) -> int:\n\
+       \treturn i\n\n\
+       def foo(a: string, b: string):\n\
+       \tprint(a, b)\n\n\
+       def concatenate(a: string, b: string) -> string:\n\
+       \treturn a + b\n\n\
+      \       a = 2 + solve(3)\n\
+       b = 2 + (3 - 4)\n\
+       c = a + b\n\
+       d = \"Hello\" + \"World\"\n\
+       e: int = \"Hello\" + \"World\"\n\
+       f = -1\n\
+       g = 1 and False\n\
+       h = g + \"Hello\""
+  in
+
+  let tbl = init_tbl processed_ast in
+
+  assert_equal (Some Int) @@ Hashtbl.find tbl "a";
+  assert_equal (Some Int) @@ Hashtbl.find tbl "b";
+  assert_equal (Some Int) @@ Hashtbl.find tbl "c";
+  assert_equal (Some String) @@ Hashtbl.find tbl "d";
+  assert_equal (Some Int) @@ Hashtbl.find tbl "e";
+  assert_equal (Some Int) @@ Hashtbl.find tbl "f";
+  assert_equal (Some Int) @@ Hashtbl.find tbl "g";
+  assert_equal (Some String) @@ Hashtbl.find tbl "h"
+
+let test_imports _ =
+  assert_equal [ Import "math"; Import "numpy" ]
+  @@ to_raw_ast "import math\nimport numpy";
+
+  assert_equal
+    [
+      Import "math";
+      Import "numpy";
+      Function { name = "main"; parameters = []; return = Int; body = [] };
+    ]
+  @@ to_ast "import math\nimport numpy"
+
+let test_comments _ =
+  assert_equal
+    [
+      Comment "this does something cool";
+      Expression
+        (CoreFunctionCall { name = Print; arguments = [ Identifier "i" ] });
+      Comment "this also does something cool";
+      Expression
+        (CoreFunctionCall
+           { name = Print; arguments = [ StringLiteral "hello world" ] });
+    ]
+  @@ to_raw_ast
+       "# this does something cool\n\
+        print(i)\n\
+        # this also does something cool\n\
+        print(\'hello world\')"
 
 let tests =
   "Parse tests"
@@ -758,7 +805,10 @@ let tests =
          "While loop" >:: test_while_loops;
          "Conditionals" >:: test_conditionals;
          "Nested blocks and complete programs" >:: test_nested_blocks;
-         "Post-processing" >:: test_postprocessing;
+         "Replacing negative integers" >:: test_replace_negs;
+         "Type inference" >:: test_type_inference;
+         "Import statements" >:: test_imports;
+         "Comments" >:: test_comments;
        ]
 
 let () = run_test_tt_main tests

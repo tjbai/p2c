@@ -62,6 +62,7 @@ type statement =
   | If of { test : expression; body : statement list }
   | Elif of { test : expression; body : statement list }
   | Else of { body : statement list }
+  | Comment of string
   | Pass
   | Break
   | Continue

@@ -89,6 +89,14 @@ let split_on (t : token) (ts : token list) : token list list =
   in
   aux ts [] []
 
+(* Concatenate remaining strings in a line  *)
+let gather_strings (ts : token list) : string * token list =
+  let rec aux (acc : string) (tl : token list) =
+    match tl with Value s :: tl -> aux (acc ^ " " ^ s) tl | _ -> (acc, tl)
+  in
+  let string, tl = aux "" ts in
+  (String.sub string ~pos:1 ~len:(String.length string - 1), tl)
+
 (***********************************************************************************************)
 
 (* Parse a single expression *)
@@ -179,6 +187,9 @@ and parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
 let rec parse_statement (ts : token list) : s_context =
   match ts with
   | Value "import" :: Value m :: tl -> (Import m, tl)
+  | Hash :: tl ->
+      let s, tl = gather_strings tl in
+      (Comment s, tl)
   | FunDef :: Value name :: Lparen :: tl ->
       let parameters, return, tl = parse_fn_def tl in
       let body, tl = parse_body tl in
@@ -347,10 +358,17 @@ let init_tbl (ast : ast) : primitive_tbl =
     ~init:(Hashtbl.create (module String))
     ~f:(fun acc el ->
       match el with
-      | Function { name; parameters; return = Unknown | Void; body } -> acc
       | Function { name; parameters; return; body } ->
-          add acc name return;
-          acc
+          if equal_primitive return Unknown || equal_primitive return Void then
+            acc
+          else (
+            add acc name return;
+            acc)
+      | Expression (Assignment { name; t; value; operator }) ->
+          if equal_primitive t Unknown || equal_primitive t Void then acc
+          else (
+            add acc name t;
+            acc)
       | _ -> acc)
 
 let infer_type ~(tbl : primitive_tbl) (e : expression) : expression =

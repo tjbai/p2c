@@ -327,7 +327,8 @@ module ConModule : CodeGen = struct
           numberOfTabs countTabs ^ helper tl (acc ^ "break;\n") countTabs
       | Ast.Continue :: tl ->
           numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
-      | Ast.Import _m :: _tl -> failwith "TODO: include syntax"
+      | Ast.Import _m :: _tl -> failwith "TODO"
+      | Ast.Comment _s :: _tl -> failwith "TODO"
     in
 
     helper main_tree "" 0
