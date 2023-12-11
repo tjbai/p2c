@@ -22,12 +22,12 @@ let renamePyFileToC fileName =
   ^ ".c"
 
 (*converts python name to C equivalent for header files*)
-let renamePyFileToC fileName =
+let renamePyFileToH fileName =
   (fileName
   |> String.split_on_chars ~on:[ '.' ]
   |> List.filter ~f:(fun s -> String.length s > 0)
   |> List.hd_exn)
-  ^ "."
+  ^ ".h"
 
 let run_ops (listOfFiles : string list) =
   let rec helper listOfFiles =
@@ -35,7 +35,7 @@ let run_ops (listOfFiles : string list) =
     | [] -> ()
     | currentFile :: t ->
         let outputFileC = "./"^renamePyFileToC currentFile in
-        let outputFileH = "./"^renamePyFileToC currentFile in 
+        let outputFileH = "./"^renamePyFileToH currentFile in 
         let includeStatement = "#include \"" ^ outputFileH ^ "\"" in
         let srcContent =
           Stdio.printf "%s\n" (FileIO.readFile currentFile);
