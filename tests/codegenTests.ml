@@ -280,15 +280,99 @@ let assignment_eg_1 =
 let assignment_eg_2 =
   [
     Ast.Expression
-      (Assignment { name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None });
+      (Assignment { name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None });
       Ast.Expression
-      (Assignment { name = "a"; value = IntLiteral 10; t = Ast.Int; operator = None });
+      (Assignment { name = "b"; value = IntLiteral 10; t = Ast.Int; operator = None });
+  ]
+
+(*var equal to addition of two *)
+let assignment_eg_3 =
+  [
+    Ast.Expression
+      (Assignment
+         {
+           name = "c";
+           value =
+             BinaryOp
+               {
+                 operator = Ast.Add;
+                 left = IntLiteral 5;
+                 right = IntLiteral 5;
+               };
+           t = Ast.Int;
+           operator = None
+         });
+  ]
+
+(*var equal to addition of two vars*)
+let assignment_eg_4 =
+  [
+    Ast.Expression(Assignment { name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None });
+    Ast.Expression(Assignment { name = "e"; value = IntLiteral 5; t = Ast.Int; operator = None });
+    Ast.Expression
+      (Assignment
+         {
+           name = "f";
+           value =
+             BinaryOp
+               {
+                 operator = Ast.Add;
+                 left = Identifier "d";
+                 right = Identifier "e";
+               };
+           t = Ast.Int;
+           operator = None
+         });
+  ]
+
+(*Need to check assignment out of scope*)
+let assignment_eg_5 =
+  [
+    Ast.Function
+      {
+        name = "foo";
+        parameters = [ ("a", Ast.Int) ];
+        return = Ast.Int;
+        body =
+          [
+            Expression(Assignment { name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None });
+            Expression(Assignment { name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None });
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "c";
+                   right = Identifier "d";
+                 });
+          ];
+      };
+    Ast.Function
+      {
+        name = "bar";
+        parameters = [ ("a", Ast.Int) ];
+        return = Ast.Int;
+        body =
+          [
+            Expression(Assignment { name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None });
+            Expression(Assignment { name = "d"; value = IntLiteral 5; t = Ast.Int; operator = None });
+            Expression
+              (BinaryOp
+                 {
+                   operator = Ast.Add;
+                   left = Identifier "c";
+                   right = Identifier "d";
+                 });
+          ];
+      };
   ]
   
-
 let assignment_1 _ =
   assert_equal "int a = 5;\n" @@ ConModule.convertToString assignment_eg_1;
-  assert_equal "int a = 5;\nint 10 = 5;\n" @@ ConModule.convertToString assignment_eg_2
+  assert_equal "int b = 5;\nb = 10;\n" @@ ConModule.convertToString assignment_eg_2;
+  assert_equal "int c = 5 + 5;\n" @@ ConModule.convertToString assignment_eg_3;
+  assert_equal "int d = 5;\nint e = 5;\nint f = d + e;\n" @@ ConModule.convertToString assignment_eg_4;
+  assert_equal "int foo(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}int bar(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}" @@ ConModule.convertToString assignment_eg_5
+ 
 
 (***************************** Return tests ******************************************)
 

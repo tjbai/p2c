@@ -43,27 +43,10 @@ module Common = struct
 
   let declare_variable id =
     Hashtbl.add_exn declared_variables ~key:id ~data:true
-(* 
-  let generateMapofVars (tree_list : Ast.statement list) :
-      (string, Ast.primitive) Hashtbl.t =
-    let map = Hashtbl.create (module String) in
-    let rec helper (tree_list : Ast.statement list) : unit =
-      match tree_list with
-      | [] -> ()
-      | Ast.Expression exp :: tl -> (
-          match exp with
-          | Ast.Assignment { name = id; value = _; t = prim; operator = _ } ->
-              Hashtbl.add_exn map ~key:id ~data:prim;
-              helper tl
-          | _ -> helper tl)
-      | _ :: tl -> helper tl
-    in
-    helper tree_list;
-    map *)
+
+  let clearHashTable  () = Hashtbl.clear declared_variables
 
   (*CORE FUNCTIONS*)
-
-  (*Core Functions*)
 
   (*check precedence for binary operations*)
   let checkIfSubAdd binaryOp =
@@ -272,6 +255,7 @@ module ConModule : CodeGen = struct
   let convertToString (main_tree : Ast.statement list) : string =
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
+      Common.clearHashTable ();
       numberOfTabs countTabs
       ^ Common.primitiveToString prim
       ^ " " ^ name ^ "(" ^ convertArgsListString args ^ "){\n"
@@ -328,7 +312,6 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
-
           helper tl
             (acc ^ functionToString prim name args stateList countTabs )
             countTabs
