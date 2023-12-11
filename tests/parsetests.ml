@@ -740,7 +740,7 @@ let test_type_inference _ =
        \tprint(a, b)\n\n\
        def concatenate(a: string, b: string) -> string:\n\
        \treturn a + b\n\n\
-      \       a = 2 + solve(3)\n\
+       a = 2 + solve(3)\n\
        b = 2 + (3 - 4)\n\
        c = a + b\n\
        d = \"Hello\" + \"World\"\n\
