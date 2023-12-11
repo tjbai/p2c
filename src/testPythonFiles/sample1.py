@@ -1,2 +1,4 @@
-def main(a: int, b: int) -> int:
-    return a + b
+a = 5
+b = 10
+
+c = a + b

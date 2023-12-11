@@ -759,6 +759,23 @@ let loopTests _ =
   @@ ConModule.convertToString forLoop;
   assert_equal "while(True){\n\ta + b;\n}" @@ ConModule.convertToString whileLoop
 
+(*************************************************************************************)
+
+let headerTest_1 = [
+  Function {
+    name = "foo";
+    parameters = [("a", Ast.Int)];
+    return = Ast.Int;
+    body = [
+      Expression(Assignment {name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Expression(Assignment {name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Expression(BinaryOp {operator = Ast.Add; left = Identifier "b"; right = Identifier "c"});
+    ]
+  }
+]
+
+let test_functionHeaders _ = 
+  assert_equal "int foo(int a);\n" @@ GenerateHeader.convertToString headerTest_1
 
 (***************************** UTIL **************************************************)
 
@@ -776,6 +793,7 @@ let codeGenTests =
          "control tests" >:: testControl;
          "ordering tests" >:: testOrdering;
           "loop tests" >:: loopTests;
+          "function headers" >:: test_functionHeaders
        ]
 
 let series = "Final Project Tests" >::: [ codeGenTests ]
