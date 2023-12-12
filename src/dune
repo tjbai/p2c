@@ -20,7 +20,7 @@
   (pps bisect_ppx)))
 
 (library
- (name codegenutil)
+ (name codegenUtil)
  (modules codegenUtil)
  (libraries base core ast)
  (preprocess
@@ -29,7 +29,7 @@
 (library
  (name codegen)
  (modules codegen)
- (libraries core ast codegenutil)
+ (libraries core ast codegenUtil)
  (preprocess
   (pps ppx_jane bisect_ppx)))
 

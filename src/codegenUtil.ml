@@ -29,8 +29,9 @@ module Common = struct
   (*HELPER FUNCTIONS*)
 
   (*Convert arguments of function to string*)
- 
-  let declared_variables : (string, bool) Hashtbl.t = Hashtbl.create (module String)
+
+  let declared_variables : (string, bool) Hashtbl.t =
+    Hashtbl.create (module String)
 
   let is_variable_declared id =
     match Hashtbl.find declared_variables id with
@@ -40,7 +41,7 @@ module Common = struct
   let declare_variable id =
     Hashtbl.add_exn declared_variables ~key:id ~data:true
 
-  let clearHashTable  () = Hashtbl.clear declared_variables
+  let clearHashTable () = Hashtbl.clear declared_variables
 
   (*CORE FUNCTIONS*)
 
@@ -98,17 +99,18 @@ module Common = struct
     in
     helper expList ""
 
-    let convertArgsListString (argsList : (string * Ast.primitive) list) : string =
-      let rec helper (argsList : (string * Ast.primitive) list) : string =
-        match argsList with
-        | [] -> ""
-        | (id, prim) :: tl -> primitiveToString prim ^ " " ^ id ^ ", "^helper tl 
-      in
+  let convertArgsListString (argsList : (string * Ast.primitive) list) : string
+      =
+    let rec helper (argsList : (string * Ast.primitive) list) : string =
+      match argsList with
+      | [] -> ""
+      | (id, prim) :: tl -> primitiveToString prim ^ " " ^ id ^ ", " ^ helper tl
+    in
 
-      let result = helper argsList in 
+    let result = helper argsList in
 
-      if String.length result = 0 then result else
-      String.sub result ~pos:0 ~len:((String.length result) - 2)
+    if String.length result = 0 then result
+    else String.sub result ~pos:0 ~len:(String.length result - 2)
 
   let binaryToString (op : Ast.binaryOp option) : string =
     match op with

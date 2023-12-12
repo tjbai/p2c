@@ -1,6 +1,4 @@
 open Core
-open Codegenutil
-
 
 module type CodeGen = sig
   val convertToString : Ast.statement list -> string
@@ -9,7 +7,6 @@ end
 (***********************************************************************************************)
 module Expressions = struct
   (*CONVERSION of Expression*)
-
 
   let convertExpressionToString (exp : Ast.expression) main_tree : string =
     (*multiplication and division*)
@@ -153,15 +150,15 @@ module ConModule : CodeGen = struct
           (Expressions.convertExpressionToString upper main_tree)
           (Expressions.convertExpressionToString inc main_tree)
       ^ "{\n"
-      ^ helper statelist "" (countTabs + 1)^
-      numberOfTabs countTabs^ "}\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ numberOfTabs countTabs ^ "}\n"
     (*while loop conversion*)
     and whileLoopStr exp statelist countTabs =
       numberOfTabs countTabs ^ "while("
       ^ Expressions.convertExpressionToString exp main_tree
       ^ "){\n"
-      ^ helper statelist "" (countTabs + 1)^
-      numberOfTabs countTabs^ "}\n"
+      ^ helper statelist "" (countTabs + 1)
+      ^ numberOfTabs countTabs ^ "}\n"
     (*if statement conversion*)
     and ifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "if("
@@ -196,7 +193,6 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
-
           (*if the main function is empty then we ignore*)
           if String.equal name "main" && List.is_empty stateList then
             helper tl acc countTabs
@@ -238,7 +234,8 @@ module ConModule : CodeGen = struct
           numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
       | Ast.Import _m :: _tl ->
           helper _tl (acc ^ "#include " ^ "m" ^ "\n") countTabs
-      | Ast.Comment _s :: _tl ->  numberOfTabs countTabs ^helper _tl (acc ^ "//" ^ _s ^ "\n") countTabs
+      | Ast.Comment _s :: _tl ->
+          numberOfTabs countTabs ^ helper _tl (acc ^ "//" ^ _s ^ "\n") countTabs
     in
 
     helper main_tree "" 0
@@ -247,7 +244,7 @@ end
 module GenerateHeader : CodeGen = struct
   let commonCLibraries =
     [ "stdio.h"; "stdlib.h"; "stdbool.h"; "string.h"; "math.h" ]
-  
+
   let commonCLibrariesToString (libraries : string list) : string =
     let rec helper (libraries : string list) (acc : string) : string =
       match libraries with
@@ -260,9 +257,8 @@ module GenerateHeader : CodeGen = struct
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
       match tree_list with
       | [] -> acc
-      | Ast.Function { name; parameters = args; return = prim; body = bdy } :: tl
-        ->
-
+      | Ast.Function { name; parameters = args; return = prim; body = bdy }
+        :: tl ->
           (*if the main function is empty*)
           if String.equal name "main" && List.is_empty bdy then helper tl acc
           else
@@ -275,5 +271,5 @@ module GenerateHeader : CodeGen = struct
       | _ :: tl -> helper tl acc
     in
 
-    commonCLibrariesToString commonCLibraries ^helper main_tree ""
+    commonCLibrariesToString commonCLibraries ^ helper main_tree ""
 end
