@@ -826,7 +826,7 @@ let ifElseIfStatement =
   ]
 
 let testControl _ =
-  assert_equal "if(true){\n\ta + b;\n}"
+  assert_equal "if(true){\n\ta + b;\n}\n"
   @@ ConModule.convertToString basicIfStatement;
   assert_equal "if(a == b){\n\ta + b;\n}else{\n\ta - b;\n}\n"
   @@ ConModule.convertToString ifElseStatement;
