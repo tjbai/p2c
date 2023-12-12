@@ -153,8 +153,8 @@ module ConModule : CodeGen = struct
           (Expressions.convertExpressionToString upper main_tree)
           (Expressions.convertExpressionToString inc main_tree)
       ^ "{\n"
-      ^ helper statelist "" (countTabs + 1)
-      ^ "}\n"
+      ^ helper statelist "" (countTabs + 1)^
+      numberOfTabs countTabs^ "}\n"
     (*while loop conversion*)
     and whileLoopStr exp statelist countTabs =
       numberOfTabs countTabs ^ "while("
