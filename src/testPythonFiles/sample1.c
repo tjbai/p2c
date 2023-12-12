@@ -1,6 +1,4 @@
-#include "./src/testPythonFiles/sample1.h"
-int main(){
-	int a = 5;
-	int b = 10;
-	int c = a + b;
+#include ".//testPythonFiles/sample1.h"
+int sampleFunction(int a, int b){
+	return a;
 }

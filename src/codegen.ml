@@ -98,9 +98,9 @@ module Expressions = struct
           let args = List.map expList ~f:mainHelper in
           match id with
           | Print ->
-              "printf("
+              "printf(\""
               ^ CodegenUtil.Common.getReturnType main_tree expList
-              ^ ", "
+              ^ "\", "
               ^ String.concat ~sep:", " args
               ^ ")"
           | Input ->
@@ -144,7 +144,7 @@ module ConModule : CodeGen = struct
       ^ CodegenUtil.Common.convertArgsListString args
       ^ "){\n"
       ^ helper stateList "" (countTabs + 1)
-      ^ "}"
+      ^ "}\n"
     (*for loop conversion*)
     and forLoopStr id lower upper inc statelist countTabs =
       numberOfTabs countTabs
@@ -154,33 +154,33 @@ module ConModule : CodeGen = struct
           (Expressions.convertExpressionToString inc main_tree)
       ^ "{\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ "}"
+      ^ "}\n"
     (*while loop conversion*)
     and whileLoopStr exp statelist countTabs =
       numberOfTabs countTabs ^ "while("
       ^ Expressions.convertExpressionToString exp main_tree
       ^ "){\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ "}"
+      ^ "}\n"
     (*if statement conversion*)
     and ifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "if("
       ^ Expressions.convertExpressionToString exp main_tree
       ^ "){\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ "}"
+      ^ numberOfTabs countTabs ^ "}"
     (*else if statement conversion*)
     and elifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "else if("
       ^ Expressions.convertExpressionToString exp main_tree
       ^ ") {\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ "}"
+      ^ numberOfTabs countTabs ^ "}"
     (*else string conversions*)
     and elseStr statelist countTabs =
-      numberOfTabs countTabs ^ "else {\n"
+      "else{\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ "}"
+      ^ numberOfTabs countTabs ^ "}\n"
     and helper (tree_list : Ast.statement list) (acc : string) (countTabs : int)
         : string =
       match tree_list with
@@ -196,9 +196,14 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
-          helper tl
-            (acc ^ functionToString prim name args stateList countTabs)
-            countTabs
+
+          (*if the main function is empty then we ignore*)
+          if String.equal name "main" && List.is_empty stateList then
+            helper tl acc countTabs
+          else
+            helper tl
+              (acc ^ functionToString prim name args stateList countTabs)
+              countTabs
       (*For Loops*)
       | Ast.For { value = id; increment = inc; lower; upper; body = statelist }
         :: tl ->
@@ -233,27 +238,42 @@ module ConModule : CodeGen = struct
           numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
       | Ast.Import _m :: _tl ->
           helper _tl (acc ^ "#include " ^ "m" ^ "\n") countTabs
-      | Ast.Comment _s :: _tl -> helper _tl (acc ^ "//" ^ "s" ^ "\n") countTabs
+      | Ast.Comment _s :: _tl ->  numberOfTabs countTabs ^helper _tl (acc ^ "//" ^ _s ^ "\n") countTabs
     in
 
     helper main_tree "" 0
 end
 
 module GenerateHeader : CodeGen = struct
+  let commonCLibraries =
+    [ "stdio.h"; "stdlib.h"; "stdbool.h"; "string.h"; "math.h" ]
+  
+  let commonCLibrariesToString (libraries : string list) : string =
+    let rec helper (libraries : string list) (acc : string) : string =
+      match libraries with
+      | [] -> acc
+      | hd :: tl -> helper tl (acc ^ "#include <" ^ hd ^ ">\n")
+    in
+    helper libraries ""
+
   let convertToString (main_tree : Ast.statement list) : string =
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
       match tree_list with
       | [] -> acc
-      | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
+      | Ast.Function { name; parameters = args; return = prim; body = bdy } :: tl
         ->
-          helper tl
-            (acc
-            ^ CodegenUtil.Common.primitiveToString prim
-            ^ " " ^ name ^ "("
-            ^ CodegenUtil.Common.convertArgsListString args
-            ^ ");\n")
+
+          (*if the main function is empty*)
+          if String.equal name "main" && List.is_empty bdy then helper tl acc
+          else
+            helper tl
+              (acc
+              ^ CodegenUtil.Common.primitiveToString prim
+              ^ " " ^ name ^ "("
+              ^ CodegenUtil.Common.convertArgsListString args
+              ^ ");\n")
       | _ :: tl -> helper tl acc
     in
 
-    helper main_tree ""
+    commonCLibrariesToString commonCLibraries ^helper main_tree ""
 end

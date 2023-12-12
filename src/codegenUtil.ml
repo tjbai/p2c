@@ -60,7 +60,7 @@ module Common = struct
     | Ast.Int -> "int"
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
-    | _ -> failwith "Invalid primitive"
+    | _ -> "void"
 
   let rec checkIfAndOperatorPresent (exp : Ast.expression) : bool =
     match exp with
@@ -102,9 +102,13 @@ module Common = struct
       let rec helper (argsList : (string * Ast.primitive) list) : string =
         match argsList with
         | [] -> ""
-        | (id, prim) :: tl -> primitiveToString prim ^ " " ^ id ^ helper tl
+        | (id, prim) :: tl -> primitiveToString prim ^ " " ^ id ^ ", "^helper tl 
       in
-      helper argsList
+
+      let result = helper argsList in 
+
+      if String.length result = 0 then result else
+      String.sub result ~pos:0 ~len:((String.length result) - 2)
 
   let binaryToString (op : Ast.binaryOp option) : string =
     match op with

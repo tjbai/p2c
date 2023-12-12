@@ -38,6 +38,7 @@ let run_ops (listOfFiles : string list) =
         let outputFileH = "./" ^ renamePyFileToH currentFile in
         let includeStatement = "#include \"" ^ outputFileH ^ "\"" in
         let srcContent =
+          
           Stdio.printf "%s\n" (FileIO.readFile currentFile);
           FileIO.readFile currentFile
           |> Parse.to_ast |> Codegen.ConModule.convertToString
@@ -49,6 +50,7 @@ let run_ops (listOfFiles : string list) =
         FileIO.writeFile ~output:outputFileC
           ~input:(includeStatement ^ "\n" ^ srcContent);
         FileIO.writeFile ~output:outputFileH ~input:headerContent;
+
         helper t
   in
   helper listOfFiles
