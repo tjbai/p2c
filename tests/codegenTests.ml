@@ -325,7 +325,7 @@ let expression_1 _ =
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na * b / b + c - c / d;\n"
   @@ ConModule.convertToString multDivAddSub;
   assert_equal
-  "bool e = True;\nbool f = False;\nbool g = True;\nbool h = False;\n(e || f) && (g || h);\n"
+  "bool e = true;\nbool f = false;\nbool g = true;\nbool h = false;\n(e || f) && (g || h);\n"
   @@ ConModule.convertToString and_or
 
 let multplicationExpression =
@@ -578,7 +578,7 @@ let break = [ Ast.Break ]
 
 let controlOperators _ =
   assert_equal "return 5;\n" @@ ConModule.convertToString return_eg_1;
-  assert_equal "return foo(\"hello\", 5, bar(True, \"Cat\"));\n"
+  assert_equal "return foo(\"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString returnComplex;
   assert_equal "return;\n" @@ ConModule.convertToString pass;
   assert_equal "continue;\n" @@ ConModule.convertToString continue;
@@ -615,7 +615,7 @@ let functionCall_embeddedFunc =
 let functionCall_1 _ =
   assert_equal "foo(\"hello\", 5);\n"
   @@ ConModule.convertToString functionCall_eg_1;
-  assert_equal "foo(\"hello\", 5, bar(True, \"Cat\"));\n"
+  assert_equal "foo(\"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString functionCall_embeddedFunc
 
 (***************************** Core Functions      ***********************************)
@@ -704,10 +704,10 @@ let coreFuncTests _ =
   assert_equal "printf(\"%s %d \", \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
   assert_equal
-  "int bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %d \", \"hello\", 5, bar(True, \"Cat\"));\n"
+  "int bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %d \", \"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex;
   assert_equal
-  "string bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %s \", \"hello\", 5, bar(True, \"Cat\"));\n"
+  "string bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %s \", \"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex_str
 
 (***************************** FUNCTIONS *********************************************)
@@ -825,11 +825,11 @@ let ifElseIfStatement =
   ]
 
 let testControl _ =
-  assert_equal "if(True){\n\ta + b;\n}"
+  assert_equal "if(true){\n\ta + b;\n}"
   @@ ConModule.convertToString basicIfStatement;
   assert_equal "if(a == b){\n\ta + b;\n}else{\n\ta - b;\n}\n"
   @@ ConModule.convertToString ifElseStatement;
-  assert_equal "if(True){\n\ta + b;\n}else if(False) {\n\ta - b;\n}"
+  assert_equal "if(true){\n\ta + b;\n}else if(false) {\n\ta - b;\n}"
   @@ ConModule.convertToString ifElseIfStatement
 
 (***************************** ORDERING **************************************************)
@@ -924,7 +924,7 @@ let whileLoop =
 let loopTests _ =
   assert_equal "for(int i=0;i<10;i=i+1){\n\ta + b;\n}\n"
   @@ ConModule.convertToString forLoop;
-  assert_equal "while(True){\n\ta + b;\n}\n"
+  assert_equal "while(true){\n\ta + b;\n}\n"
   @@ ConModule.convertToString whileLoop
 
 (*************************************************************************************)
@@ -1015,7 +1015,7 @@ let example_1 =
     }
 
 let complete_tests _ = 
-  assert_equal "int main(int a){\n\tint b = 5;\n\tint c = 5;\n\tfor(int i=0;i<10;i=i+1){\n\t\ta + b;\n}\n}\n"
+  assert_equal "int main(int a){\n\tint b = 5;\n\tint c = 5;\n\tfor(int i=0;i<10;i=i+1){\n\t\ta + b;\n\t}\n}\n"
   @@ ConModule.convertToString [example_1]
 
 
@@ -1039,5 +1039,5 @@ let codeGenTests =
           "complete tests" >:: complete_tests;
        ]
 
-let series = "Final Project Tests" >::: [ codeGenTests ]
+let series = "codeGen tests" >::: [ codeGenTests ]
 let () = run_test_tt_main series

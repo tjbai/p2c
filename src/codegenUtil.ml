@@ -53,14 +53,14 @@ module Common = struct
 
   (*converts bool to string - C type*)
   let convertBoolToString bool =
-    match bool with true -> "True" | false -> "False"
+    match bool with true -> "true" | false -> "false"
 
   let primitiveToString input =
     match input with
     | Ast.Int -> "int"
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
-    | _ -> "void"
+    | _ -> ""
 
   let rec checkIfAndOperatorPresent (exp : Ast.expression) : bool =
     match exp with
