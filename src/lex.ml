@@ -156,6 +156,8 @@ let tokenize_line (line : string list) : token list =
 
   line |> aux [] false |> join_uops []
 
+let repeat (t : token) (n : int) : token list = List.init n ~f:(fun _ -> t)
+
 let tokenize (file : string) : token list =
   let init = ([], 0) in
 
@@ -166,15 +168,14 @@ let tokenize (file : string) : token list =
     if String.length line = 0 then (tokens @ [ Newline ], prev_indent)
     else
       let new_tokens = line |> split_and_process |> tokenize_line in
-
-      match compare cur_indent prev_indent with
-      | c when c > 0 -> (tokens @ [ Indent ] @ new_tokens, cur_indent)
-      | c when c < 0 -> (tokens @ [ Dedent ] @ new_tokens, cur_indent)
+      match cur_indent - prev_indent with
+      | c when c > 0 -> (tokens @ repeat Indent c @ new_tokens, cur_indent)
+      | c when c < 0 -> (tokens @ repeat Dedent (-c) @ new_tokens, cur_indent)
       | _ -> (tokens @ new_tokens, cur_indent)
   in
 
   match file |> String.split_lines |> List.fold ~init ~f with
-  | t, indent -> t @ List.init indent ~f:(fun _ -> Dedent)
+  | t, n -> t @ repeat Dedent n
 
 let show_token (t : token) : string =
   t |> sexp_of_token |> Sexplib.Sexp.to_string

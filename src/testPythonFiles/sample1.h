@@ -4,3 +4,4 @@
 #include <string.h>
 #include <math.h>
 int sampleFunction(int a, int b);
+int main();
