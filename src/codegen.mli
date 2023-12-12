@@ -5,3 +5,5 @@ module type CodeGen = sig
 end
 
 module ConModule : CodeGen
+
+module GenerateHeader: CodeGen
