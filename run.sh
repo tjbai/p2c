@@ -4,13 +4,13 @@
 
 # Cleans the project
 
-dune clean 
+# dune clean 
 
-# Builds
+# # Builds
 cd src
-rm -f *.coverage
+# rm -f *.coverage
 
-dune build
+# dune build
 
 # test files
 files="./testPythonFiles/sample1.py"

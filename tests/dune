@@ -17,3 +17,8 @@
  (name codegenTests)
  (libraries core ounit2 codegen)
  (modules codegenTests))
+
+(test
+ (name endtoendtests)
+ (libraries core ounit2 codegen parse lex ast)
+ (modules endtoendtests))

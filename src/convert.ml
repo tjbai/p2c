@@ -34,20 +34,24 @@ let run_ops (listOfFiles : string list) =
     match listOfFiles with
     | [] -> ()
     | currentFile :: t ->
-        let outputFileC = "./"^renamePyFileToC currentFile in
-        let outputFileH = "./"^renamePyFileToH currentFile in 
+        let outputFileC = "./" ^ renamePyFileToC currentFile in
+        let outputFileH = "./" ^ renamePyFileToH currentFile in
         let includeStatement = "#include \"" ^ outputFileH ^ "\"" in
         let srcContent =
           Stdio.printf "%s\n" (FileIO.readFile currentFile);
+          Stdio.printf "%s\n"
+            (FileIO.readFile currentFile |> Parse.to_ast |> Ast.showAst);
           FileIO.readFile currentFile
           |> Parse.to_ast |> Codegen.ConModule.convertToString
         in
-        let headerContent = 
+        let headerContent =
           FileIO.readFile currentFile
           |> Parse.to_ast |> Codegen.GenerateHeader.convertToString
         in
-        FileIO.writeFile ~output:outputFileC ~input:(includeStatement^"\n"^srcContent);
-        FileIO.writeFile ~output:outputFileH ~input:(headerContent);
+        FileIO.writeFile ~output:outputFileC
+          ~input:(includeStatement ^ "\n" ^ srcContent);
+        FileIO.writeFile ~output:outputFileH ~input:headerContent;
+
         helper t
   in
   helper listOfFiles

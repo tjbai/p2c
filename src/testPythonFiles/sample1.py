@@ -1,2 +1,4 @@
-def main(int a, int b) -> int:
-    print("Hello World!")
+def sampleFunction(a: int, b: int) -> int:
+    while a + b < 10:
+        a += 1
+        b += 2
