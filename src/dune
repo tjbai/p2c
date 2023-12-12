@@ -22,7 +22,7 @@
 (library
  (name codegenUtil)
  (modules codegenUtil)
- (libraries base core ast)
+ (libraries core ast)
  (preprocess
   (pps ppx_jane bisect_ppx)))
 

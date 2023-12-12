@@ -19,4 +19,5 @@ module Common : sig
   val getReturnType : Ast.statement list -> Ast.expression list -> string
   val binaryToString : Ast.binaryOp option -> string
   val convertArgsListString : (string * Ast.primitive) list -> string
+  val checkIfElseStatementNext : Ast.statement list -> bool
 end

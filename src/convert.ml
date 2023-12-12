@@ -45,6 +45,8 @@ let run_ops (listOfFiles : string list) =
           FileIO.readFile currentFile
           |> Parse.to_ast |> Codegen.GenerateHeader.convertToString
         in
+        Printf.printf "Read in Value : %s\n" (FileIO.readFile currentFile);
+        Printf.printf "AST : %s\n" ( (FileIO.readFile currentFile) |> Parse.to_ast |> Ast.showAst);
         FileIO.writeFile ~output:outputFileC
           ~input:(includeStatement ^ "\n" ^ srcContent);
         FileIO.writeFile ~output:outputFileH ~input:headerContent;

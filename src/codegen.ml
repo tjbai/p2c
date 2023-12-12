@@ -64,7 +64,7 @@ module Expressions = struct
             CodegenUtil.Common.primitiveToString varType
             ^ " " ^ id ^ " "
             ^ CodegenUtil.Common.binaryToString op
-            ^ " " ^ mainHelper exp)
+            ^ " " ^ mainHelper exp) 
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
@@ -165,7 +165,7 @@ module ConModule : CodeGen = struct
       ^ Expressions.convertExpressionToString exp main_tree
       ^ "){\n"
       ^ helper statelist "" (countTabs + 1)
-      ^ numberOfTabs countTabs ^ "}"
+      ^ numberOfTabs countTabs 
     (*else if statement conversion*)
     and elifStr exp statelist countTabs =
       numberOfTabs countTabs ^ "else if("
@@ -211,7 +211,12 @@ module ConModule : CodeGen = struct
           helper tl (acc ^ whileLoopStr exp statelist countTabs) countTabs
       (*if statements*)
       | Ast.If { test = exp; body = statelist } :: tl ->
-          helper tl (acc ^ ifStr exp statelist countTabs) countTabs
+        let addNewLineIfElse = 
+          match CodegenUtil.Common.checkIfElseStatementNext tl with
+          | true -> ""
+          | false -> "\n"
+        in
+          helper tl ((acc ^ ifStr exp statelist countTabs)^"}"^addNewLineIfElse) countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
           helper tl (acc ^ elifStr exp statelist countTabs) countTabs
