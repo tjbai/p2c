@@ -161,12 +161,16 @@ let tokenize (file : string) : token list =
 
   let f (tokens, prev_indent) line =
     let line, cur_indent = strip_indent line in
-    let new_tokens = line |> split_and_process |> tokenize_line in
 
-    match compare cur_indent prev_indent with
-    | c when c > 0 -> (tokens @ [ Indent ] @ new_tokens, cur_indent)
-    | c when c < 0 -> (tokens @ [ Dedent ] @ new_tokens, cur_indent)
-    | _ -> (tokens @ new_tokens, cur_indent)
+    (* Propagate indent context if line is empty *)
+    if String.length line = 0 then (tokens @ [ Newline ], prev_indent)
+    else
+      let new_tokens = line |> split_and_process |> tokenize_line in
+
+      match compare cur_indent prev_indent with
+      | c when c > 0 -> (tokens @ [ Indent ] @ new_tokens, cur_indent)
+      | c when c < 0 -> (tokens @ [ Dedent ] @ new_tokens, cur_indent)
+      | _ -> (tokens @ new_tokens, cur_indent)
   in
 
   match file |> String.split_lines |> List.fold ~init ~f with
