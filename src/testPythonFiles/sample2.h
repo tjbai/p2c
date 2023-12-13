@@ -3,4 +3,6 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-int sampleFunctionTwo(int a, int b);
+int sampleFunction(int a, int b);
+ callFunction();
+int main();

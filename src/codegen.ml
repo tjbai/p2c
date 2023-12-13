@@ -94,8 +94,17 @@ module Expressions = struct
           | Ast.Neg -> "-(" ^ mainHelper exp ^ ")")
       (*Functional Calls*)
       | Ast.FunctionCall { name = id; arguments = expList } ->
+
+          (*need to filter out external functions*)
+          let filteredOutName = 
+            if String.contains id '.' then 
+              String.split id ~on:'.'
+              |> List.last_exn
+            else id
+          in
+
           let args = List.map expList ~f:mainHelper in
-          id ^ "(" ^ String.concat ~sep:", " args ^ ")"
+          filteredOutName ^ "(" ^ String.concat ~sep:", " args ^ ")"
       (*Core Function Calls*)
       | Ast.CoreFunctionCall { name = id; arguments = expList } -> (
           let args = List.map expList ~f:mainHelper in

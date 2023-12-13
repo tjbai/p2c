@@ -1,8 +1,13 @@
 #include ".//testPythonFiles/sample2.h"
-int sampleFunctionTwo(int a, int b){
-	if(a > b){
-		return a;
-	}else{
-		return b;
+int sampleFunction(int a, int b){
+	while(a > b){
+		 a =- 1;
 	}
+	return a;
+}
+ callFunction(){
+	return sampleFunction(10, 5);
+}
+int main(){
+	callFunction();
 }
