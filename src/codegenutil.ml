@@ -56,6 +56,18 @@ module Common = struct
   let convertBoolToString bool =
     match bool with true -> "true" | false -> "false"
 
+  (*check if else statement comes next*)
+  let checkIfElseStatementNext (stmt: Ast.statement list) : bool =
+    match stmt with
+    | [] -> false
+    | Ast.Elif { test = _ ; body = _}::_ -> true
+    | Ast.Else { body = _ } :: _ -> true
+    | _ -> false
+
+  (*check if else statement comes next*)
+
+  (*check if else statement comes next*)
+
   let primitiveToString input =
     match input with
     | Ast.Int -> "int"

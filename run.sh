@@ -8,12 +8,14 @@
 
 # # Builds
 cd src
-# rm -f *.coverage
+rm -f *.coverage
 
-# dune build
+dune clean
+dune build
+
 
 # test files
-files="./testPythonFiles/sample1.py"
+files="./testPythonFiles/sample1.py ./testPythonFiles/sample2.py"
 
 # Runs the tests
 location=$(../_build/default/src/convert.exe $files)
