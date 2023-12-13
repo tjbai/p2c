@@ -15,7 +15,7 @@ dune build
 
 
 # test files
-files="./testPythonFiles/sample1.py"
+files="./testPythonFiles/sample1.py ./testPythonFiles/sample2.py"
 
 # Runs the tests
 location=$(../_build/default/src/convert.exe $files)

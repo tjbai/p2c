@@ -1,23 +1,11 @@
 #include ".//testPythonFiles/sample1.h"
 int sampleFunction(int a, int b){
-	int c = 1;
-	c = a + b;
-	while(true){
-		 a =- 1;
-	}
-	return a;
-}
- callFunction(){
-	if(true){
-		return false;
+	if(a > b){
+		return a;
 	}else{
-		return true;
+		return b;
 	}
-	return sampleFunction(10, 5);
 }
 int main(){
-	if(true){
-		sampleFunction(10, 5);
-	}
-	callFunction();
+	sample2.sampleFunctionTwo(1, sampleFunction(1, 2));
 }

@@ -3,6 +3,4 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-#include "sample2.h"
-int sampleFunction(int a, int b);
-int main();
+int sampleFunctionTwo(int a, int b);

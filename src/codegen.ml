@@ -242,8 +242,7 @@ module ConModule : CodeGen = struct
           numberOfTabs countTabs ^ helper tl (acc ^ "break;\n") countTabs
       | Ast.Continue :: tl ->
           numberOfTabs countTabs ^ helper tl (acc ^ "continue;\n") countTabs
-      | Ast.Import _m :: _tl ->
-          helper _tl (acc ^ "#include " ^ "m" ^ "\n") countTabs
+      | Ast.Import _ :: tl -> helper tl acc countTabs
       | Ast.Comment _s :: _tl ->
           numberOfTabs countTabs ^ helper _tl (acc ^ "//" ^ _s ^ "\n") countTabs
     in
@@ -267,6 +266,7 @@ module GenerateHeader : CodeGen = struct
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
       match tree_list with
       | [] -> acc
+      | Ast.Import s :: tl -> helper tl (acc ^ "#include \"" ^ s ^ ".h\"\n")
       | Ast.Function { name; parameters = args; return = prim; body = bdy }
         :: tl ->
           (*if the main function is empty*)

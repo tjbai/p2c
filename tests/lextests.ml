@@ -218,8 +218,8 @@ let test_tokenize _ =
       Bop "+";
       Value "b";
       Newline;
-      Dedent;
       Newline;
+      Dedent;
       Value "add";
       Lparen;
       Value "2";
@@ -228,7 +228,57 @@ let test_tokenize _ =
       Rparen;
       Newline;
     ]
-    ("def add(a: int, b: int) -> int:\n\treturn a + b \n\nadd(2+3) " |> tokenize)
+    ("def add(a: int, b: int) -> int:\n\treturn a + b \n\nadd(2+3)" |> tokenize);
+
+  assert_equal
+    [
+      Value "import";
+      Value "sample2";
+      Newline;
+      Newline;
+      FunDef;
+      Value "sampleFunction";
+      Lparen;
+      Value "a";
+      Colon;
+      IntDef;
+      Comma;
+      Value "b";
+      Colon;
+      IntDef;
+      Rparen;
+      Arrow;
+      IntDef;
+      Colon;
+      Newline;
+      Indent;
+      If;
+      Value "a";
+      Bop ">";
+      Value "b";
+      Colon;
+      Newline;
+      Indent;
+      Return;
+      Value "a";
+      Newline;
+      Dedent;
+      Else;
+      Colon;
+      Newline;
+      Indent;
+      Return;
+      Value "b";
+      Newline;
+      Dedent;
+      Dedent;
+    ]
+    ("import sample2\n\n\
+      def sampleFunction(a: int, b: int) -> int:\n\
+     \    if a > b: \n\
+     \        return a\n\
+     \    else:\n\
+     \        return b\n" |> tokenize)
 
 let tests =
   "Lex tests"
