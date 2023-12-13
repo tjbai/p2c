@@ -1,6 +1,23 @@
 def sampleFunction(a: int, b: int) -> int:
-    while a != 0 and b != 0:
-        if a - b > 0:
-            a = a - b
-        else:
-            return a
+    c = 1
+    c = a + b
+
+    while True:
+        a -= 1
+    return a
+
+
+def callFunction():
+    if True:
+        return False
+    else:
+        return True
+
+    return sampleFunction(10, 5)
+
+
+if True:
+    sampleFunction(10, 5)
+
+
+callFunction()
