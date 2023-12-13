@@ -15,8 +15,8 @@ open OUnit2
     | '\\' -> "\\\\"
     | c -> String.make 1 c
   in
-  String.concat "" (List.map escape_char (  s |> string_to_list ))
-   *)
+  String.concat "" (List.map escape_char (  s |> string_to_list )) *)
+  
 (************** FUNCTION GENERATION TESTS **************)
 
 let withoutMain_eg_py = "def sampleFunction(a: int, b: int) -> int:\n\treturn a + b\n\ne = 5\nf = 6\ne + f"
@@ -47,6 +47,17 @@ let funcCall_c = "int sampleFunction(int a, int b){\n\twhile(a > b){\n\t\t a =- 
 let testFuncCall _ =
   assert_equal funcCall_c @@ (funcCall_py |> Parse.to_ast |> Codegen.ConModule.convertToString )
 
+(********************** FUNCTIONS WITH COMMENTS TESTS **************************)
+
+
+
+let funcWithComments_py = "def sampleFunction(a: int, b: int) -> int:\n\t# HELLO! THIS IS A COMMENT!\n\tif a > b:\n\t\treturn a\n\telse:\n\t\treturn b"
+
+let funcWithComments_c = "int sampleFunction(int a, int b){\n\t//HELLO! THIS IS A COMMENT!\n\tif(a > b){\n\t\treturn a;\n\t}else{\n\t\treturn b;\n\t}\n}\n"
+
+let testFuncWithComments _ =
+  assert_equal funcWithComments_c @@ (funcWithComments_py |> Parse.to_ast |> Codegen.ConModule.convertToString )
+
     
 (**************************** TESTS **************************)
     let tests =
@@ -56,6 +67,7 @@ let testFuncCall _ =
          "testFunctions" >:: testFunctions;
           "testIf" >:: testIf;
           "testFuncCall" >:: testFuncCall;
+          "testFuncWithComments" >:: testFuncWithComments;
        ]
 
 let () = run_test_tt_main tests
