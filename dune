@@ -1,8 +1,8 @@
-(rule
- (target submission.zip)
- (deps
-  (source_tree src)
-  (source_tree tests)
-  README.md)
- (action
-  (run zip -r submission.zip %{deps})))
+; (rule
+;  (target submission.zip)
+;  (deps
+;   (source_tree src)
+;   (source_tree tests)
+;   README.md)
+;  (action
+;   (run zip -r submission.zip %{deps})))

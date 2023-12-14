@@ -1,6 +1,7 @@
 (* Compiles to executable, entrypoint for CLI *)
 
 open Core
+open Codegen
 
 module FileIO = struct
   (*reads in the file*)
@@ -34,22 +35,24 @@ let run_ops (listOfFiles : string list) =
     match listOfFiles with
     | [] -> ()
     | currentFile :: t ->
+        (* setup files *)
         let outputFileC = "./" ^ renamePyFileToC currentFile in
         let outputFileH = "./" ^ renamePyFileToH currentFile in
-        let includeStatement = "#include \"" ^ outputFileH ^ "\"" in
-        let srcContent =
-          FileIO.readFile currentFile
-          |> Parse.to_ast |> Codegen.ConModule.convertToString
-        in
-        let headerContent =
-          FileIO.readFile currentFile
-          |> Parse.to_ast |> Codegen.GenerateHeader.convertToString
-        in
-        Printf.printf "Read in Value : %s\n" (FileIO.readFile currentFile);
-        Printf.printf "AST : %s\n" ( (FileIO.readFile currentFile) |> Parse.to_ast |> Ast.showAst);
-        FileIO.writeFile ~output:outputFileC
-          ~input:(includeStatement ^ "\n" ^ srcContent);
-        FileIO.writeFile ~output:outputFileH ~input:headerContent;
+        let includes = "#include \"" ^ outputFileH ^ "\"" in
+
+        (* convert *)
+        let ast = FileIO.readFile currentFile |> Parse.to_ast in
+        let src = includes ^ "\n" ^ (ast |> ConModule.convertToString) in
+        let header = ast |> GenerateHeader.convertToString in
+
+        (* log *)
+        Printf.printf "Python:\n%s\n" (FileIO.readFile currentFile);
+        Printf.printf "AST:\n%s\n" (ast |> Ast.showAst);
+        Printf.printf "C:\n%s\n" src;
+
+        (* write *)
+        FileIO.writeFile ~output:outputFileC ~input:src;
+        FileIO.writeFile ~output:outputFileH ~input:header;
 
         helper t
   in

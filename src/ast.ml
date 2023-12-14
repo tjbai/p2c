@@ -67,10 +67,12 @@ type statement =
   | Pass
   | Break
   | Continue
+[@@deriving sexp]
 
-type ast = statement list
+type ast = statement list [@@deriving sexp]
 
 let showExpression (e : expression) : string =
   e |> sexp_of_expression |> Sexplib.Sexp.to_string
 
-let showAst (tree : ast) : string = match tree with _ -> ""
+let showAst (tree : ast) : string =
+  tree |> sexp_of_ast |> Sexplib.Sexp.to_string
