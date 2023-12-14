@@ -19,12 +19,12 @@ module Expressions = struct
           Codegenutil.Common.checkIfSubAdd right )
       with
       | true, true ->
-        Format.sprintf "( %s ) %s ( %s )\n" leftText op rightText;
+        Format.sprintf "(%s) %s (%s)" leftText op rightText;
       | true, false ->
-        Format.sprintf"( %s ) %s %s\n" leftText op rightText;
+        Format.sprintf"(%s) %s %s" leftText op rightText;
       | false, true ->
-        Format.sprintf "%s %s ( %s )\n" leftText op rightText;
-      | false, false -> Format.sprintf "%s %s %s\n" leftText op rightText;
+        Format.sprintf "%s %s (%s)" leftText op rightText;
+      | false, false -> Format.sprintf "%s %s %s" leftText op rightText;
     (*and or for pembdas purposes*)
     and andOrPemdas (left : Ast.expression) (right : Ast.expression)
         (op : Ast.binaryOp) : string =
@@ -37,10 +37,10 @@ module Expressions = struct
               Codegenutil.Common.checkIfOrOperatorPresent right )
           with
           | true, true ->
-            Format.sprintf "( %s ) && ( %s )\n" leftText rightText
-          | true, false -> Format.sprintf "( %s ) && %s\n" leftText rightText
-          | false, true -> Format.sprintf "%s && ( %s )\n" leftText rightText
-          | false, false -> Format.sprintf "%s && %s\n" leftText rightText)
+            Format.sprintf "(%s) && (%s)\n" leftText rightText
+          | true, false -> Format.sprintf "(%s) && %s" leftText rightText
+          | false, true -> Format.sprintf "%s && (%s)" leftText rightText
+          | false, false -> Format.sprintf "%s && %s" leftText rightText)
       | Ast.Or -> (
         let leftText = mainHelper left in
         let rightText = mainHelper right in
@@ -49,10 +49,10 @@ module Expressions = struct
               Codegenutil.Common.checkIfAndOperatorPresent right )
           with
           | true, true ->
-            Format.sprintf "( %s ) || ( %s )\n" leftText rightText
-          | true, false -> Format.sprintf "( %s ) || %s\n" leftText rightText
-          | false, true -> Format.sprintf "%s || ( %s )\n" leftText rightText
-          | false, false -> Format.sprintf "%s || %s\n" leftText rightText)
+            Format.sprintf "(%s) || (%s)\n" leftText rightText
+          | true, false -> Format.sprintf "(%s) || %s" leftText rightText
+          | false, true -> Format.sprintf "%s || (%s)" leftText rightText
+          | false, false -> Format.sprintf "%s || %s" leftText rightText)
       | _ -> failwith "Invalid operator"
     and mainHelper (exp : Ast.expression) : string =
       match exp with
@@ -138,7 +138,7 @@ module ConModule : CodeGen = struct
   (*Convert for loop to string*)
   let convertForLoopString (value : string) (lower : string) (upper : string)
       (increment : string) =
-    Format.sprintf "for(int %s = %s; %s <= %s; %s += %s)" value lower value
+    Format.sprintf "for(int %s=%s;%s<=%s;%s+=%s)" value lower value
       upper value increment
 
   let convertToString (main_tree : Ast.statement list) : string =
@@ -166,7 +166,7 @@ module ConModule : CodeGen = struct
         (numberOfTabs countTabs)
     (*if statement conversion*)
     and ifStr exp statelist countTabs =
-      numberOfTabs countTabs ^ Format.sprintf "if(%s){\n%s%s}\n"
+      numberOfTabs countTabs ^ Format.sprintf "if(%s){\n%s%s}"
         (Expressions.convertExpressionToString exp main_tree)
         (helper statelist "" (countTabs + 1))
         (numberOfTabs countTabs)
@@ -178,12 +178,11 @@ module ConModule : CodeGen = struct
         (numberOfTabs countTabs)
     (*else string conversions*)
     and elseStr statelist countTabs =
-      Format.sprintf "%selse{\n%s%s}\n" (numberOfTabs countTabs)
+      Format.sprintf "else{\n%s%s}\n" 
         (helper statelist "" (countTabs + 1))
         (numberOfTabs countTabs)
     and helper (tree_list : Ast.statement list) (acc : string) (countTabs : int)
         : string =
-
       match tree_list with
       | [] -> acc
       (*Expression Assignment*)
@@ -220,7 +219,7 @@ module ConModule : CodeGen = struct
           | true -> ""
           | false -> "\n"
         in
-          helper tl ((acc ^ ifStr exp statelist countTabs)^"}"^addNewLineIfElse) countTabs
+          helper tl ((acc ^ ifStr exp statelist countTabs)^addNewLineIfElse) countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
           helper tl (acc ^ elifStr exp statelist countTabs) countTabs
@@ -245,6 +244,7 @@ module ConModule : CodeGen = struct
           numberOfTabs countTabs ^ helper _tl (acc ^ "//" ^ _s ^ "\n") countTabs
     in
 
+    (*Note: List.Fold cannot be used here because helper is recursive*)
     helper main_tree "" 0
 end
 
