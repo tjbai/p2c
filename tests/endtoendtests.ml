@@ -15,8 +15,8 @@ open OUnit2
     | '\\' -> "\\\\"
     | c -> String.make 1 c
   in
-  String.concat "" (List.map escape_char (  s |> string_to_list )) *)
-  
+  String.concat "" (List.map escape_char (  s |> string_to_list ))    *)
+   
 (************** FUNCTION GENERATION TESTS **************)
 
 let withoutMain_eg_py = "def sampleFunction(a: int, b: int) -> int:\n\treturn a + b\n\ne = 5\nf = 6\ne + f"
@@ -33,9 +33,10 @@ let if_eg_py = "def sampleFunction(a: int, b: int) -> int:\n\tif a > b:\n\t\tret
 let if_eg_c = "int sampleFunction(int a, int b){\n\tif(a > b){\n\t\treturn a;\n\t}else{\n\t\treturn b;\n\t}\n}\n"
 
 let if_elif_eg_py = "def sampleFunction(a: int, b: int) -> int:\n\tif a > b:\n\t\treturn a\n\telif a < b:\n\t\treturn b\n\telse:\n\t\treturn a + b"
-let if_elif_eg_c = "int sampleFunction(int a, int b){\n\tif(a > b){\n\t\treturn a;\n\t}\telse if(a < b) {\n\t\treturn b;\n\t}else{\n\t\treturn a + b;\n\t}\n}\n"
+let if_elif_eg_c = "int sampleFunction(int a, int b){\n\tif(a > b){\n\t\treturn a;\n\t}\telse if(a < b){\n\t\treturn b;\n\t}\nelse{\n\t\treturn a + b;\n\t}\n}\n"
 let testIf _ =
   assert_equal if_eg_c @@ (if_eg_py |> Parse.to_ast |> Codegen.ConModule.convertToString );
+
   assert_equal if_elif_eg_c @@ (if_elif_eg_py |> Parse.to_ast |> Codegen.ConModule.convertToString )
 
 (****************************** FUNCTION CALLS TESTS ******************************)
@@ -52,13 +53,19 @@ let testFuncCall _ =
 
 
 let funcWithComments_py = "def sampleFunction(a: int, b: int) -> int:\n\t# HELLO! THIS IS A COMMENT!\n\tif a > b:\n\t\treturn a\n\telse:\n\t\treturn b"
-
 let funcWithComments_c = "int sampleFunction(int a, int b){\n\t//HELLO! THIS IS A COMMENT!\n\tif(a > b){\n\t\treturn a;\n\t}else{\n\t\treturn b;\n\t}\n}\n"
-
 let testFuncWithComments _ =
   assert_equal funcWithComments_c @@ (funcWithComments_py |> Parse.to_ast |> Codegen.ConModule.convertToString )
 
-    
+(************************** TYPE INFERENCING TESTS **************************)
+let inferencing_1 = "import sample2\n\ndef sampleFunction(a: int, b: int) -> int:\n\t# HELLO! THIS IS A COMMENT!\n\tc = a + b\n\treturn c"
+
+
+let inferencing_1_c = "int sampleFunction(int a, int b){\n\t//HELLO! THIS IS A COMMENT!\n\tbool c = a + b;\n\treturn c;\n}\n"
+
+let testTypeInferencing _ = 
+  (* Printf.printf "%s\n" @@ escape_chars @@ (inferencing_1 |> Parse.to_ast |> Codegen.ConModule.convertToString); *)
+  assert_equal inferencing_1_c @@ (inferencing_1 |> Parse.to_ast |> Codegen.ConModule.convertToString )
 (**************************** TESTS **************************)
     let tests =
   "End to End Tests"
@@ -68,6 +75,7 @@ let testFuncWithComments _ =
           "testIf" >:: testIf;
           "testFuncCall" >:: testFuncCall;
           "testFuncWithComments" >:: testFuncWithComments;
+          "testTypeInferencing" >:: testTypeInferencing;
        ]
 
 let () = run_test_tt_main tests

@@ -15,7 +15,7 @@
 
 (test
  (name codegenTests)
- (libraries core ounit2 codegen)
+ (libraries core ounit2 codegen codegenutil)
  (modules codegenTests))
 
 (test

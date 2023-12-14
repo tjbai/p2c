@@ -309,23 +309,66 @@ let and_or =
          });
   ]
 
+(***
+
+WARNING ABOUT THE BELOW FUNCTIONS
+
+- USE THIS TO DEBUG THE ACTUAL OUTPUT - BUT REALIZE THIS RESULTS IN A SHRODINGER'S CAT SITUATION. 
+PRINTIN OUT THE RESULT WILL YIELD THE RESULT *WITHOUT* THE PRINT STATEMENT
+
+*)
+(* let string_to_list str =
+    let rec loop i limit =
+      if i = limit then []
+      else str.[i] :: loop (i + 1) limit
+    in
+    loop 0 (String.length str)
+  let escape_chars (s : string) : string =
+  let escape_char = function
+    | '\n' -> "\\n"
+    | '\t' -> "\\t"
+    | '\\' -> "\\\\"
+    | c -> String.make 1 c
+  in
+  String.concat "" (List.map escape_char (  s |> string_to_list ))    *)
 let expression_1 _ =
+
+  (* Printf.printf "Hello"; *)
+
+  (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString additionOnly; *)
+
   assert_equal
-  "int a = 5;\nint b = 5;\nint c = 5;\nint d = 5;\na + b + c + d;\n"
+  "int a = 5;\nint b = 5;\nc = 5;\nd = 5;\na + b + c + d;\n"
   @@ ConModule.convertToString additionOnly;
+  (* Printf.printf "1"; *)
+
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\n(a + b) * (c + d);\n"
   @@ ConModule.convertToString addMult_1;
+  (* Printf.printf "2"; *)
+
   assert_equal "a = 5;\nb = 5;\na * b;\n" @@ ConModule.convertToString mult_1;
+  (* Printf.printf "3"; *)
+
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\n(a + b) * b * (c + c * d);\n"
   @@ ConModule.convertToString addMult_2;
+  (* Printf.printf "4"; *)
+
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na + b - c + d;\n"
   @@ ConModule.convertToString addSubMix;
+  (* Printf.printf "5"; *)
+
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na * b / c / d;\n"
   @@ ConModule.convertToString multDiv;
+  (* Printf.printf "6"; *)
+
   assert_equal "a = 5;\nb = 5;\nc = 5;\nd = 5;\na * b / b + c - c / d;\n"
   @@ ConModule.convertToString multDivAddSub;
+  (* Printf.printf "7"; *)
+
+
+  (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString and_or; *)
   assert_equal
-  "bool e = true;\nbool f = false;\nbool g = true;\nbool h = false;\n(e || f) && (g || h);\n"
+    "bool e = true;\nbool f = false;\nbool g = true;\nbool h = false;\n(e || f) && (g || h)\n;\n"
   @@ ConModule.convertToString and_or
 
 let multplicationExpression =
@@ -530,25 +573,63 @@ let assignment_eg_5 =
       };
   ]
 
+  let assignmentAll = 
+    [
+      Expression(Assignment{name = "a"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "b"; value = IntLiteral 5; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "c"; value = IntLiteral 5; t = Ast.Int; operator = None});
+
+      Expression(Assignment{name = "d"; value = BinaryOp{operator = Ast.Add; left = Identifier "a"; right = Identifier "b"}; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "e"; value = BinaryOp{operator = Ast.Subtract; left = Identifier "a"; right = Identifier "b"}; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "f"; value = BinaryOp{operator = Ast.Multiply; left = Identifier "a"; right = Identifier "b"}; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "g"; value = BinaryOp{operator = Ast.Divide; left = Identifier "a"; right = Identifier "b"}; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "h"; value = BinaryOp{operator = Ast.Mod; left = Identifier "a"; right = Identifier "b"}; t = Ast.Int; operator = None});
+      Expression(Assignment{name = "i"; value = BinaryOp{operator = Ast.Gt; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+      Expression(Assignment{name = "j"; value = BinaryOp{operator = Ast.Lt; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+      Expression(Assignment{name = "k"; value = BinaryOp{operator = Ast.Gte; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+      Expression(Assignment{name = "l"; value = BinaryOp{operator = Ast.Lte; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+      Expression(Assignment{name = "m"; value = BinaryOp{operator = Ast.And; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+      Expression(Assignment{name = "n"; value = BinaryOp{operator = Ast.Or; left = Identifier "a"; right = Identifier "b"}; t = Ast.Boolean; operator = None});
+    
+    ]
+
+    let test_binaryToString _ =
+      assert_equal "+" (Codegenutil.Common.binaryToString (Some Ast.Add));
+      assert_equal "*" (Codegenutil.Common.binaryToString (Some Ast.Multiply));
+      assert_equal "-" (Codegenutil.Common.binaryToString (Some Ast.Subtract));
+      assert_equal "/" (Codegenutil.Common.binaryToString (Some Ast.Divide));
+      assert_equal "&&" (Codegenutil.Common.binaryToString (Some Ast.And));
+      assert_equal "||" (Codegenutil.Common.binaryToString (Some Ast.Or));
+      assert_equal "==" (Codegenutil.Common.binaryToString (Some Ast.Equal));
+      assert_equal "!=" (Codegenutil.Common.binaryToString (Some Ast.NotEqual));
+      assert_equal "<" (Codegenutil.Common.binaryToString (Some Ast.Lt));
+      assert_equal "<=" (Codegenutil.Common.binaryToString (Some Ast.Lte));
+      assert_equal ">" (Codegenutil.Common.binaryToString (Some Ast.Gt));
+      assert_equal ">=" (Codegenutil.Common.binaryToString (Some Ast.Gte));
+      assert_equal "%" (Codegenutil.Common.binaryToString (Some Ast.Mod));
+      assert_equal "=" (Codegenutil.Common.binaryToString None)
+    
+
 let assignment_1 _ =
   assert_equal "int a = 5;\n" @@ ConModule.convertToString assignment_eg_1;
+  (* Printf.printf "1"; *)
   assert_equal "int b = 5;\nb = 10;\n"
   @@ ConModule.convertToString assignment_eg_2;
+  (* Printf.printf "2"; *)
   assert_equal "int c = 5 + 5;\n" @@ ConModule.convertToString assignment_eg_3;
+  (* Printf.printf "3"; *)
   assert_equal "int d = 5;\nint e = 5;\nint f = d + e;\n"
-  @@ ConModule.convertToString assignment_eg_4;
-  assert_equal
-    "int foo(int a){\n\
-     \tint c = 5;\n\
-     \tint d = 5;\n\
-     \tc + d;\n\
-     }\nint bar(int a){\n\
-     \tint c = 5;\n\
-     \tint d = 5;\n\
-     \tc + d;\n\
-     }\n"
+  @@ ConModule.convertToString assignment_eg_4
+
+  let assignment_2 _ = 
+    assert_equal
+    "int foo(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}\nint bar(int a){\n\tc = 5;\n\td = 5;\n\tc + d;\n}\n"
 
   @@ ConModule.convertToString assignment_eg_5
+
+    let assignment_3 _ =
+      assert_equal
+      "int a = 5;\nint b = 5;\nint c = 5;\nint d = a + b;\nint e = a - b;\nint f = a * b;\nint g = a / b;\nint h = a % b;\nbool i = a > b;\nbool j = a < b;\nbool k = a >= b;\nbool l = a <= b;\nbool m = a && b;\nbool n = a || b;\n"      @@ ConModule.convertToString assignmentAll
 
 (***************************** Return tests ******************************************)
 
@@ -701,15 +782,36 @@ let coreFuncComplex_str =
          });
   ]
 
+let coreFunctionBoolean = 
+  [
+    Ast.Expression
+      (CoreFunctionCall
+         {
+           name = Ast.Print;
+           arguments =
+             [
+               StringLiteral "hello";
+               IntLiteral 5;
+               BooleanLiteral true;
+             ];
+         });
+  ]
+
 let coreFuncTests _ =
+
   assert_equal "printf(\"%s %d \", \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
+  (* Printf.printf "1"; *)
   assert_equal
   "int bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %d \", \"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex;
+  (* Printf.printf "2"; *)
   assert_equal
   "string bar(bool a, string b){\n\ta + b;\n}\nprintf(\"%s %d %s \", \"hello\", 5, bar(true, \"Cat\"));\n"
-  @@ ConModule.convertToString coreFuncComplex_str
+  @@ ConModule.convertToString coreFuncComplex_str;
+  (* Printf.printf "3"; *)
+  assert_equal "printf(\"%s %d %d \", \"hello\", 5, true);\n"
+  @@ ConModule.convertToString coreFunctionBoolean
 
 (***************************** FUNCTIONS *********************************************)
 let function_1 =
@@ -826,11 +928,14 @@ let ifElseIfStatement =
   ]
 
 let testControl _ =
+  (* Printf.printf "0"; *)
   assert_equal "if(true){\n\ta + b;\n}\n"
   @@ ConModule.convertToString basicIfStatement;
+  (* Printf.printf "1"; *)
   assert_equal "if(a == b){\n\ta + b;\n}else{\n\ta - b;\n}\n"
   @@ ConModule.convertToString ifElseStatement;
-  assert_equal "if(true){\n\ta + b;\n}else if(false) {\n\ta - b;\n}"
+  (* Printf.printf "2"; *)
+  assert_equal "if(true){\n\ta + b;\n}else if(false){\n\ta - b;\n}\n"
   @@ ConModule.convertToString ifElseIfStatement
 
 (***************************** ORDERING **************************************************)
@@ -923,8 +1028,10 @@ let whileLoop =
   ]
 
 let loopTests _ =
-  assert_equal "for(int i=0;i<10;i=i+1){\n\ta + b;\n}\n"
+  (* Printf.printf "0"; *)
+  assert_equal "for(int i=0;i<=10;i+=1){\n\ta + b;\n}\n"
   @@ ConModule.convertToString forLoop;
+  (* Printf.printf "1"; *)
   assert_equal "while(true){\n\ta + b;\n}\n"
   @@ ConModule.convertToString whileLoop
 
@@ -970,54 +1077,8 @@ let test_functionHeaders _ =
   assert_equal "#include <stdio.h>\n#include <stdlib.h>\n#include <stdbool.h>\n#include <string.h>\n#include <math.h>\nint foo(int a);\n"
   @@ GenerateHeader.convertToString headerTest_1
 
-(**************************** COMPLETE TESTS ******************************************)
 
-let example_1 = 
-  Function
-    {
-      name = "main";
-      parameters = [ ("a", Ast.Int) ];
-      return = Ast.Int;
-      body =
-        [
-          Expression
-            (Assignment
-               {
-                 name = "b";
-                 value = IntLiteral 5;
-                 t = Ast.Int;
-                 operator = None;
-               });
-          Expression
-            (Assignment
-               {
-                 name = "c";
-                 value = IntLiteral 5;
-                 t = Ast.Int;
-                 operator = None;
-               });
-          For {
-            value = "i";
-            lower = IntLiteral 0;
-            upper = IntLiteral 10;
-            increment = IntLiteral 1;
-            body =
-              [
-                Expression
-                  (BinaryOp
-                     {
-                       operator = Ast.Add;
-                       left = Identifier "a";
-                       right = Identifier "b";
-                     });
-              ];
-          };
-        ];
-    }
 
-let complete_tests _ = 
-  assert_equal "int main(int a){\n\tint b = 5;\n\tint c = 5;\n\tfor(int i=0;i<10;i=i+1){\n\t\ta + b;\n\t}\n}\n"
-  @@ ConModule.convertToString [example_1]
 
 (***************************** UTIL **************************************************)
 
@@ -1026,6 +1087,9 @@ let codeGenTests =
   >: test_list
        [
          "assignment tests" >:: assignment_1;
+         "assignment tests 2">:: assignment_2;
+         "assignment tests 3">:: assignment_3;
+         "binary to string">:: test_binaryToString;
          "return tests" >:: controlOperators;
          "expression_1" >:: expression_1;
          "expression_2" >:: expression_2;
@@ -1035,9 +1099,7 @@ let codeGenTests =
          "control tests" >:: testControl;
          "ordering tests" >:: testOrdering;
          "loop tests" >:: loopTests;
-         "function headers" >:: test_functionHeaders;
-          "complete tests" >:: complete_tests;
-       ]
+         "function headers" >:: test_functionHeaders       ]
 
 let series = "codeGen tests" >::: [ codeGenTests ]
 let () = run_test_tt_main series

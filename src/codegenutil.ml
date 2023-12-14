@@ -1,26 +1,29 @@
 open Core
 
-module FunctionLookUp = struct
-  let generateMapOfFunctionSignatures (tree_list : Ast.statement list) :
-      (string, Ast.primitive * (string * Ast.primitive) list) Hashtbl.t =
-    let map = Hashtbl.create (module String) in
-    let rec helper (tree_list : Ast.statement list) : unit =
-      match tree_list with
-      | [] -> ()
-      | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
-        ->
-          Hashtbl.add_exn map ~key:name ~data:(prim, args);
-          helper tl
-      | _ :: tl -> helper tl
-    in
-    helper tree_list;
-    map
 
-  let findReturnType (id : string) tree : Ast.primitive =
-    let hashtbl = generateMapOfFunctionSignatures tree in
-    match Hashtbl.find hashtbl id with
-    | Some (prim, _) -> prim
-    | None -> Ast.Void
+
+
+
+module FunctionLookUp = struct
+    
+    module M = Map.Make(String)
+
+    let generateMapOfFunctionSignatures (tree_list : Ast.statement list) =
+      let rec helper (tree_list : Ast.statement list) map =
+        match tree_list with
+        | [] -> map
+        | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
+          ->
+            helper tl (Map.add_exn map ~key:name ~data:(prim, args))
+        | _ :: tl -> helper tl map
+      in
+      helper tree_list M.empty 
+
+    let findReturnType (id : string) tree : Ast.primitive =
+      let map = generateMapOfFunctionSignatures tree in
+      match Map.find map id with
+      | Some (prim, _) -> prim
+      | None -> failwith "Function not found" 
 end
 
 (***********************************************************************************************)

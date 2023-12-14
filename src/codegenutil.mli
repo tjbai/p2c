@@ -1,7 +1,9 @@
+
+
+
+
 module FunctionLookUp : sig
-  val generateMapOfFunctionSignatures :
-    Ast.statement list ->
-    (string, Ast.primitive * (string * Ast.primitive) list) Base.Hashtbl.t
+
 
   val findReturnType : string -> Ast.statement list -> Ast.primitive
 end
