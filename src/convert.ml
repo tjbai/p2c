@@ -12,6 +12,16 @@ module FileIO = struct
     Out_channel.close file
 end
 
+module Pretty = struct
+  (* pretty colored strings for output :) *)
+  let colored (color : int) (message : string) : unit =
+    Printf.printf "\027[38;5;%dm%s\027[0m" color message
+
+  let green = colored 34
+  let blue = colored 31
+  let cyan = colored 36
+end
+
 (*converts python name to C equivalent for source files*)
 let renamePyFileToC fileName =
   (fileName
@@ -28,48 +38,45 @@ let renamePyFileToH fileName =
   |> List.hd_exn)
   ^ ".h"
 
-(* pretty colored strings for output :) *)
-let colored (color : int) (message : string) : unit =
-  Printf.printf "\027[38;5;%dm%s\027[0m" color message
-
-let green = colored 34
-let blue = colored 31
-let cyan = colored 36
-
 let run_ops (listOfFiles : string list) (verbose : bool) =
   let rec helper listOfFiles =
     match listOfFiles with
     | [] -> ()
-    | currentFile :: t ->
+    | currentFile :: t -> (
         (* setup files *)
         let outputFileC = "./" ^ renamePyFileToC currentFile in
         let outputFileH = "./" ^ renamePyFileToH currentFile in
         let includes = "#include \"" ^ outputFileH ^ "\"" in
 
-        (* convert *)
-        let file = FileIO.readFile currentFile in
-        let ast = file |> Parse.to_ast in
-        let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
-        let header = ast |> GenerateHeader.convertToString in
+        try
+          (* convert *)
+          let file = FileIO.readFile currentFile in
+          let ast = file |> Parse.to_ast in
+          let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
+          let header = ast |> GenerateHeader.convertToString in
 
-        (* log *)
-        if verbose then (
-          blue "Python:\n";
-          printf "%s\n\n" file;
-          blue "AST:\n";
-          printf "%s\n\n" (ast |> Ast.showAst);
-          blue "C:\n";
-          printf "%s\n" src)
-        else ();
+          (* log *)
+          if verbose then (
+            Pretty.blue "Python:\n";
+            printf "%s\n\n" file;
+            Pretty.blue "AST:\n";
+            printf "%s\n\n" (ast |> Ast.showAst);
+            Pretty.blue "C:\n";
+            printf "%s\n" src)
+          else ();
 
-        (* write *)
-        FileIO.writeFile ~output:outputFileC ~input:src;
-        FileIO.writeFile ~output:outputFileH ~input:header;
+          (* write *)
+          FileIO.writeFile ~output:outputFileC ~input:src;
+          FileIO.writeFile ~output:outputFileH ~input:header;
 
-        helper t
+          helper t
+        with Failure s ->
+          Pretty.cyan "Encountered failure:\n";
+          printf "%s\n" s)
   in
   helper listOfFiles
 
+(* Pull out everything in main, makes more sense for REPL *)
 let strip_main (ast : Ast.ast) : Ast.ast =
   match ast with
   | Ast.Function { name = "main"; parameters = _; return = _; body } :: [] ->
@@ -77,7 +84,7 @@ let strip_main (ast : Ast.ast) : Ast.ast =
   | _ -> ast
 
 let rec repl (verbose : bool) (acc : string list) () =
-  if List.length acc = 0 then green ">>> " else green "... ";
+  if List.length acc = 0 then Pretty.green ">>> " else Pretty.green "... ";
   Out_channel.flush stdout;
 
   match In_channel.input_line In_channel.stdin with
@@ -93,14 +100,14 @@ and process_input (verbose : bool) (input : string) =
      let ast = Parse.to_ast input in
      let c = ast |> strip_main |> ConModule.convertToString in
      if verbose then (
-       blue "AST:\n";
+       Pretty.blue "AST:\n";
        printf "%s\n\n" (ast |> Ast.showAst);
-       blue "C:\n")
+       Pretty.blue "C:\n")
      else ();
      printf "%s\n" c
-   with e ->
-     cyan "Encountered error:\n";
-     printf "%s\n" (Exn.to_string e));
+   with Failure s ->
+     Pretty.cyan "Encountered error:\n";
+     printf "%s\n" s);
   repl verbose [] ()
 
 (* command lines *)
