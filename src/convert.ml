@@ -76,14 +76,15 @@ let run_ops (listOfFiles : string list) (verbose : bool) =
   in
   helper listOfFiles
 
-(* Pull out everything in main, makes more sense for REPL *)
+(* pull out everything in main, makes more sense for REPL *)
 let strip_main (ast : Ast.ast) : Ast.ast =
   match ast with
   | Ast.Function { name = "main"; parameters = _; return = _; body } :: [] ->
       body
   | _ -> ast
 
-let rec repl (verbose : bool) (acc : string list) () =
+(* initiate REPL *)
+let rec repl (verbose : bool) (acc : string list) =
   if List.length acc = 0 then Pretty.green ">>> " else Pretty.green "... ";
   Out_channel.flush stdout;
 
@@ -91,10 +92,10 @@ let rec repl (verbose : bool) (acc : string list) () =
   | None -> printf "Leaving REPL"
   | Some s when String.(s = "exit") -> printf "Leaving REPL"
   | Some s when String.(s = "") ->
-      acc |> List.rev |> String.concat ~sep:"\n" |> process_input verbose
-  | Some s -> repl verbose (s :: acc) ()
+      acc |> List.rev |> String.concat ~sep:"\n" |> process verbose
+  | Some s -> repl verbose (s :: acc)
 
-and process_input (verbose : bool) (input : string) =
+and process (verbose : bool) (input : string) =
   (try
      Codegenutil.Common.clear ();
      let ast = Parse.to_ast input in
@@ -108,7 +109,7 @@ and process_input (verbose : bool) (input : string) =
    with Failure s ->
      Pretty.cyan "Encountered error:\n";
      printf "%s\n" s);
-  repl verbose [] ()
+  repl verbose []
 
 (* command lines *)
 let command =
@@ -119,7 +120,7 @@ let command =
       and verbose = flag "-v" no_arg ~doc:"enable logging" in
       fun () ->
         match List.length files with
-        | 0 -> repl verbose [] ()
+        | 0 -> repl verbose []
         | _ -> run_ops files verbose)
 
 let () = Command_unix.run command

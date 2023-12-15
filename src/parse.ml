@@ -10,6 +10,9 @@ type s_context = statement * token list
 type a_context = ast * token list
 type params = (string * primitive) list
 
+(* see note below about mutation *)
+type type_tbl = (string, primitive) Core.Hashtbl.t
+
 let impossible () = failwith "reaching this case should be impossible"
 
 (***********************************************************************************************)
@@ -357,32 +360,39 @@ let rec fold_statements (ast : ast) ~(init : 'a) ~(f : 'a -> 'b -> 'a) : 'a =
       | _ -> fold_statements tl ~init ~f)
 
 (* CAUTION: MUTATION *)
+(* NOTE: We _could_, in theory, do this monadically or by threading a table through function calls.
+   However, we also want to continue updating this table as we DFS in our post-processing run.
+   In my opinion, this way is more intuitive / simple, despite the use of side-effects. *)
 
-type primitive_tbl = (string, primitive) Core.Hashtbl.t
+(* If duplicate, overwrite with more recent *)
+let add (tbl : type_tbl) (key : string) (data : primitive) : unit =
+  Hashtbl.change tbl key ~f:(fun v -> match v with _ -> Some data)
 
-let add (tbl : primitive_tbl) (key : string) (data : primitive) : unit =
-  match Hashtbl.add tbl ~key ~data with _ -> ()
+let init_tbl (ast : ast) : type_tbl =
+  let add_params tbl ps =
+    List.fold ps ~init:() ~f:(fun _ (name, t) -> add tbl name t)
+  in
 
-let init_tbl (ast : ast) : primitive_tbl =
   fold_statements ast
     ~init:(Hashtbl.create (module String))
-    ~f:(fun acc el ->
+    ~f:(fun tbl el ->
       match el with
+      | Function { name; parameters; return = Unknown | Void; body } ->
+          add_params tbl parameters;
+          tbl
       | Function { name; parameters; return; body } ->
-          if equal_primitive return Unknown || equal_primitive return Void then
-            acc
-          else (
-            add acc name return;
-            acc)
+          add_params tbl parameters;
+          add tbl name return;
+          tbl
+      | Expression (Assignment { name; t = Unknown | Void; value; operator }) ->
+          tbl
       | Expression (Assignment { name; t; value; operator }) ->
-          if equal_primitive t Unknown || equal_primitive t Void then acc
-          else (
-            add acc name t;
-            acc)
-      | _ -> acc)
+          add tbl name t;
+          tbl
+      | _ -> tbl)
 
-let infer_type ~(tbl : primitive_tbl) (e : expression) : expression =
-  (* Naive way to reconcile mismatched leaf types *)
+let infer_type ~(tbl : type_tbl) (e : expression) : expression =
+  (* Naive way to reconcile differing types at leaves *)
   let reconcile a b : primitive option =
     match (a, b) with
     | Some at, Some bt when equal_primitive at bt -> Some at
