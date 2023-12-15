@@ -1,21 +1,6 @@
 open OUnit2
 
-(************** UTILITIES **************)
-(*
-   let string_to_list str =
-     let rec loop i limit =
-       if i = limit then []
-       else str.[i] :: loop (i + 1) limit
-     in
-     loop 0 (String.length str)
-   let escape_chars (s : string) : string =
-   let escape_char = function
-     | '\n' -> "\\n"
-     | '\t' -> "\\t"
-     | '\\' -> "\\\\"
-     | c -> String.make 1 c
-   in
-   String.concat "" (List.map escape_char (  s |> string_to_list )) *)
+let e2e source = source |> Parse.to_ast |> Codegen.ConModule.convertToString
 
 (************** FUNCTION GENERATION TESTS **************)
 
@@ -36,9 +21,7 @@ let withoutMain_eg_c =
    \te + f;\n\
    }\n"
 
-let testFunctions _ =
-  assert_equal withoutMain_eg_c
-  @@ (withoutMain_eg_py |> Parse.to_ast |> Codegen.ConModule.convertToString)
+let testFunctions _ = assert_equal withoutMain_eg_c @@ (withoutMain_eg_py |> e2e)
 
 (**************** CONDITIONAL TESTS **************************)
 
@@ -80,11 +63,9 @@ let if_elif_eg_c =
    }\n"
 
 let testIf _ =
-  assert_equal if_eg_c
-  @@ (if_eg_py |> Parse.to_ast |> Codegen.ConModule.convertToString);
+  assert_equal if_eg_c @@ (if_eg_py |> e2e);
 
-  assert_equal if_elif_eg_c
-  @@ (if_elif_eg_py |> Parse.to_ast |> Codegen.ConModule.convertToString)
+  assert_equal if_elif_eg_c @@ (if_elif_eg_py |> e2e)
 
 (****************************** FUNCTION CALLS TESTS ******************************)
 let funcCall_py =
@@ -110,9 +91,7 @@ let funcCall_c =
    \tcallFunction();\n\
    }\n"
 
-let testFuncCall _ =
-  assert_equal funcCall_c
-  @@ (funcCall_py |> Parse.to_ast |> Codegen.ConModule.convertToString)
+let testFuncCall _ = assert_equal funcCall_c @@ (funcCall_py |> e2e)
 
 (********************** FUNCTIONS WITH COMMENTS TESTS **************************)
 
@@ -135,8 +114,7 @@ let funcWithComments_c =
    }\n"
 
 let testFuncWithComments _ =
-  assert_equal funcWithComments_c
-  @@ (funcWithComments_py |> Parse.to_ast |> Codegen.ConModule.convertToString)
+  assert_equal funcWithComments_c @@ (funcWithComments_py |> e2e)
 
 (************************** TYPE INFERENCING TESTS **************************)
 let inferencing_1 =
@@ -152,17 +130,59 @@ let inferencing_1_c =
    \treturn c;\n\
    }\n"
 
+let inferencing_2 =
+  "def foo(a: int, b: int) -> int:\n\
+   \treturn a+b\n\n\
+   def test(c: int) -> int:\n\
+   \treturn c\n\n\
+   i = foo(2,3) + test(4)"
+
+let inferencing_2_c =
+  "int foo(int a, int b){\n\
+   \treturn a + b;\n\
+   }\n\
+   int test(int c){\n\
+   \treturn c;\n\
+   }\n\
+   int main(){\n\
+   \tint i = foo(2, 3) + test(4);\n\
+   }\n"
+
 let testTypeInferencing _ =
-  assert_equal inferencing_1_c
-  @@ (inferencing_1 |> Parse.to_ast |> Codegen.ConModule.convertToString)
-(*
-   Codegenutil.Common.clear ();
+  assert_equal inferencing_1_c @@ (inferencing_1 |> e2e);
 
-   Stdio.printf "HERE:\n%s\n"
-     (inferencing_2 |> Parse.to_ast |> Codegen.ConModule.convertToString);
+  assert_equal inferencing_2_c @@ (inferencing_2 |> e2e)
 
-   assert_equal inferencing_2_c
-   @@ (inferencing_2 |> Parse.to_ast |> Codegen.ConModule.convertToString) *)
+let test_issues _ =
+  (* https://github.com/tjbai/p2c/issues/23 *)
+  assert_equal "i += 1;" @@ e2e "i += 1";
+  assert_equal "int i = 0;\ni += 1;" @@ e2e "i = 0\ni += 1";
+
+  (* https://github.com/tjbai/p2c/issues/21 *)
+  assert_equal "void foo(){\n\tprintf(\"%s\", hello)\n}"
+  @@ e2e "def foo():\n\tprint(\'hello\')";
+
+  (* https://github.com/tjbai/p2c/issues/22 *)
+  assert_equal
+    "void foo(){\n\
+     \tint i = 0;\n\
+     \tfor(int x=0;x<=10;x+=1){\n\
+     \t\ti += x;\n\
+     \t}\n\
+     }\n\
+     int main(){\n\
+     \tint i = 0;\n\
+     \tprintf(\"%d\", i);\n\
+     }"
+  @@ e2e
+       "def foo():\n\
+        \ti = 0\n\
+        \tfor x in range(10):\n\
+        \t\ti += x\n\n\
+        i = 0\n\
+        print(i)"
+
+(* time permitting, the operator precedence feature would also be nice *)
 
 (**************************** TESTS **************************)
 let tests =
@@ -174,6 +194,7 @@ let tests =
          "testFuncCall" >:: testFuncCall;
          "testFuncWithComments" >:: testFuncWithComments;
          "testTypeInferencing" >:: testTypeInferencing;
+         "Issues" >:: test_issues;
        ]
 
 let () = run_test_tt_main tests
