@@ -39,42 +39,34 @@ let renamePyFileToH fileName =
   ^ ".h"
 
 let run_ops (listOfFiles : string list) (verbose : bool) =
-  let rec helper listOfFiles =
-    match listOfFiles with
-    | [] -> ()
-    | currentFile :: t -> (
-        (* setup files *)
-        let outputFileC = "./" ^ renamePyFileToC currentFile in
-        let outputFileH = "./" ^ renamePyFileToH currentFile in
-        let includes = "#include \"" ^ outputFileH ^ "\"" in
+  List.fold listOfFiles ~init:() ~f:(fun _ currentFile ->
+      let outputFileC = "./" ^ renamePyFileToC currentFile in
+      let outputFileH = "./" ^ renamePyFileToH currentFile in
+      let includes = "#include \"" ^ outputFileH ^ "\"" in
 
-        try
-          (* convert *)
-          let file = FileIO.readFile currentFile in
-          let ast = file |> Parse.to_ast in
-          let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
-          let header = ast |> GenerateHeader.convertToString in
+      try
+        (* convert *)
+        let file = FileIO.readFile currentFile in
+        let ast = file |> Parse.to_ast in
+        let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
+        let header = ast |> GenerateHeader.convertToString in
 
-          (* log *)
-          if verbose then (
-            Pretty.blue "Python:\n";
-            printf "%s\n\n" file;
-            Pretty.blue "AST:\n";
-            printf "%s\n\n" (ast |> Ast.showAst);
-            Pretty.blue "C:\n";
-            printf "%s\n" src)
-          else ();
+        (* log *)
+        if verbose then (
+          Pretty.blue "Python:\n";
+          printf "%s\n\n" file;
+          Pretty.blue "AST:\n";
+          printf "%s\n\n" (ast |> Ast.showAst);
+          Pretty.blue "C:\n";
+          printf "%s\n" src)
+        else ();
 
-          (* write *)
-          FileIO.writeFile ~output:outputFileC ~input:src;
-          FileIO.writeFile ~output:outputFileH ~input:header;
-
-          helper t
-        with Failure s ->
-          Pretty.cyan "Encountered failure:\n";
-          printf "%s\n" s)
-  in
-  helper listOfFiles
+        (* write *)
+        FileIO.writeFile ~output:outputFileC ~input:src;
+        FileIO.writeFile ~output:outputFileH ~input:header
+      with Failure s ->
+        Pretty.cyan "Encountered failure:\n";
+        printf "%s\n" s)
 
 (* pull out everything in main, makes more sense for REPL *)
 let strip_main (ast : Ast.ast) : Ast.ast =
