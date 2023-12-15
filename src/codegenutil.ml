@@ -62,6 +62,7 @@ module Common = struct
 
   let primitiveToString input =
     match input with
+    | Ast.Void -> "void"
     | Ast.Int -> "int"
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
