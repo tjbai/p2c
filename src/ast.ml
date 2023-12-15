@@ -75,4 +75,4 @@ let showExpression (e : expression) : string =
   e |> sexp_of_expression |> Sexplib.Sexp.to_string
 
 let showAst (tree : ast) : string =
-  tree |> sexp_of_ast |> Sexplib.Sexp.to_string
+  tree |> sexp_of_ast |> Sexplib.Sexp.to_string_hum

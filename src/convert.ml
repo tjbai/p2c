@@ -1,5 +1,3 @@
-(* Compiles to executable, entrypoint for CLI *)
-
 open Core
 open Codegen
 
@@ -30,7 +28,14 @@ let renamePyFileToH fileName =
   |> List.hd_exn)
   ^ ".h"
 
-let run_ops (listOfFiles : string list) =
+(* pretty colored strings for output :) *)
+let colored (color : int) (message : string) : unit =
+  Printf.printf "\027[38;5;%dm%s\027[0m" color message
+
+let green = colored 34
+let blue = colored 31
+
+let run_ops (listOfFiles : string list) (verbose : bool) =
   let rec helper listOfFiles =
     match listOfFiles with
     | [] -> ()
@@ -41,14 +46,20 @@ let run_ops (listOfFiles : string list) =
         let includes = "#include \"" ^ outputFileH ^ "\"" in
 
         (* convert *)
-        let ast = FileIO.readFile currentFile |> Parse.to_ast in
-        let src = includes ^ "\n" ^ (ast |> ConModule.convertToString) in
+        let file = FileIO.readFile currentFile in
+        let ast = file |> Parse.to_ast in
+        let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
         let header = ast |> GenerateHeader.convertToString in
 
         (* log *)
-        Printf.printf "Python:\n%s\n" (FileIO.readFile currentFile);
-        Printf.printf "AST:\n%s\n" (ast |> Ast.showAst);
-        Printf.printf "C:\n%s\n" src;
+        if verbose then (
+          blue "Python:\n";
+          printf "%s\n\n" file;
+          blue "AST:\n";
+          printf "%s\n\n" (ast |> Ast.showAst);
+          blue "C:\n";
+          printf "%s\n" src)
+        else ();
 
         (* write *)
         FileIO.writeFile ~output:outputFileC ~input:src;
@@ -58,12 +69,40 @@ let run_ops (listOfFiles : string list) =
   in
   helper listOfFiles
 
+(* bit of a hacky way to make the output
+   more REPL friendly *)
+let strip_main (s : string) : string =
+  String.sub s ~pos:13 ~len:(String.length s - 15)
+
+let rec repl (verbose : bool) () =
+  green ">>> ";
+  Out_channel.flush stdout;
+  match In_channel.input_line In_channel.stdin with
+  | None -> printf "Exiting REPL."
+  | Some s when String.(s = "exit") -> printf "Exiting REPL"
+  | Some s ->
+      (try
+         let ast = Parse.to_ast s in
+         let c = ast |> ConModule.convertToString |> strip_main in
+         if verbose then (
+           blue "AST:\n";
+           printf "%s\n\n" (ast |> Ast.showAst);
+           blue "C:\n")
+         else ();
+         printf "%s\n" c
+       with e -> printf "Encountered error %s\n" (Exn.to_string e));
+      repl verbose ()
+
 (* command lines *)
 let command =
   Command.basic ~summary:"convert.exe --files <file1> <file2>"
     ~readme:(fun () -> "More detailed information")
     Command.Let_syntax.(
-      let%map_open files = anon (sequence ("files" %: string)) in
-      fun () -> run_ops files)
+      let%map_open files = anon (sequence ("source files" %: string))
+      and verbose = flag "-v" no_arg ~doc:"enable logging" in
+      fun () ->
+        match List.length files with
+        | 0 -> repl verbose ()
+        | _ -> run_ops files verbose)
 
 let () = Command_unix.run command
