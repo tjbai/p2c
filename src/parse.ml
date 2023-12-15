@@ -5,7 +5,6 @@ open Lex
 [@@@warning "-27"]
 [@@@warning "-32"]
 
-type ('a, 'b) union = A of 'a | B of 'b
 type e_context = expression * token list
 type s_context = statement * token list
 type a_context = ast * token list
@@ -25,7 +24,10 @@ let literal (s : string) : expression =
   | _, None -> Identifier s
 
 let map_uop (s : string) : unaryOp =
-  match s with "not" -> Not | "-" -> Neg | _ -> failwith "invalid unary op"
+  match s with
+  | "not" -> Not
+  | "-" -> Neg
+  | _ -> failwith (sprintf "invalid unary op %s" s)
 
 let map_bop (s : string) : binaryOp =
   match s with
@@ -42,10 +44,7 @@ let map_bop (s : string) : binaryOp =
   | "<=" -> Lte
   | ">" -> Gt
   | ">=" -> Gte
-  | _ -> failwith "invalid binary op"
-
-let map_fn (s : string) : (coreIdentifier, string) union =
-  match s with "print" -> A Print | "input" -> A Input | _ -> B s
+  | _ -> failwith (sprintf "invalid binary op %s" s)
 
 let map_t (t : token) : primitive =
   match t with
@@ -62,6 +61,7 @@ let prec (op : binaryOp) : int =
   | Multiply | Divide | Mod -> 3
 
 (* Find the matching closing character for an opener *)
+(* Could use fold_until, but we also need to return the tail... this way cleaner? *)
 let find_closure (ts : token list) ~l ~r : token list * token list =
   let rec aux acc tl (need : int) =
     match tl with
@@ -69,7 +69,10 @@ let find_closure (ts : token list) ~l ~r : token list * token list =
     | hd :: tl when equal_token hd r -> aux (r :: acc) tl (need - 1)
     | hd :: tl when equal_token hd l -> aux (l :: acc) tl (need + 1)
     | hd :: tl -> aux (hd :: acc) tl need
-    | [] -> failwith "no closure on malformed expression"
+    | [] ->
+        failwith
+          (sprintf "could not find closure for %s in %s" (l |> show_token)
+             (ts |> show_tokens))
   in
   aux [] ts 1
 
@@ -176,9 +179,10 @@ and parse_fn_call ?(fn : string = "") (tl : token list) : e_context =
 
   let args, tl = find_rparen tl in
   let arguments = parse_arguments args [] in
-  ( (match map_fn fn with
-    | A name -> CoreFunctionCall { name; arguments }
-    | B name -> FunctionCall { name; arguments }),
+  ( (match fn with
+    | "print" -> CoreFunctionCall { name = Print; arguments }
+    | "input" -> CoreFunctionCall { name = Input; arguments }
+    | _ -> FunctionCall { name = fn; arguments }),
     tl )
 
 (***********************************************************************************************)
@@ -209,6 +213,7 @@ let rec parse_statement (ts : token list) : s_context =
       (Expression expression, tl)
 
 (* Parse everything after `def name(` *)
+(* Could use fold_until, but we also need to return the tail... this way cleaner? *)
 and parse_fn_def (ts : token list) : params * primitive * token list =
   let rec aux tl (ps : params) (ret_t : primitive) =
     match tl with
@@ -216,7 +221,9 @@ and parse_fn_def (ts : token list) : params * primitive * token list =
     | Colon :: Newline :: Indent :: tl -> (List.rev ps, ret_t, tl)
     | Arrow :: t :: tl -> aux tl ps (map_t t)
     | (Comma | Rparen) :: tl -> aux tl ps ret_t
-    | _ -> failwith "malformed function declaration"
+    | _ ->
+        failwith
+          (sprintf "can't parse function declaration %s" (ts |> show_tokens))
   in
   aux ts [] Void
 
@@ -241,8 +248,11 @@ and parse_for (ts : token list) (value : string) : s_context =
           (For { value; lower; upper; increment = IntLiteral 1; body }, tl)
       | FunctionCall { name = _; arguments = [ lower; upper; increment ] } ->
           (For { value; lower; upper; increment; body }, tl)
-      | _ -> failwith "malformed iterator")
-  | _ -> failwith "malformed for loop"
+      | _ ->
+          failwith
+            (sprintf "can't parse for-loop bounds %s"
+               (fn_call |> showExpression)))
+  | _ -> failwith (sprintf "can't parse for-loop %s" (ts |> show_tokens))
 
 (* Parse everything after `while` *)
 and parse_conditional (ts : token list) (c : token) : s_context =
@@ -255,7 +265,7 @@ and parse_conditional (ts : token list) (c : token) : s_context =
       | Lex.If -> (Ast.If { test; body }, tl)
       | Lex.Elif -> (Ast.Elif { test; body }, tl)
       | _ -> impossible ())
-  | _ -> failwith "malformed while loop"
+  | _ -> failwith (sprintf "can't parse while-loop %s" (ts |> show_tokens))
 
 (* Grab all the statements in a fixed scope *)
 and parse_body (ts : token list) : a_context =

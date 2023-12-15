@@ -1,37 +1,30 @@
 open Core
 
-
-
-
-
 module FunctionLookUp = struct
-    
-    module M = Map.Make(String)
+  module M = Map.Make (String)
 
-    let generateMapOfFunctionSignatures (tree_list : Ast.statement list) =
-      let rec helper (tree_list : Ast.statement list) map =
-        match tree_list with
-        | [] -> map
-        | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
-          ->
-            helper tl (Map.add_exn map ~key:name ~data:(prim, args))
-        | _ :: tl -> helper tl map
-      in
-      helper tree_list M.empty 
+  let generateMapOfFunctionSignatures (tree_list : Ast.statement list) =
+    let rec helper (tree_list : Ast.statement list) map =
+      match tree_list with
+      | [] -> map
+      | Ast.Function { name; parameters = args; return = prim; body = _ } :: tl
+        ->
+          helper tl (Map.add_exn map ~key:name ~data:(prim, args))
+      | _ :: tl -> helper tl map
+    in
+    helper tree_list M.empty
 
-    let findReturnType (id : string) tree : Ast.primitive =
-      let map = generateMapOfFunctionSignatures tree in
-      match Map.find map id with
-      | Some (prim, _) -> prim
-      | None -> failwith "Function not found" 
+  let findReturnType (id : string) tree : Ast.primitive =
+    let map = generateMapOfFunctionSignatures tree in
+    match Map.find map id with
+    | Some (prim, _) -> prim
+    | None -> failwith "Function not found"
 end
 
 (***********************************************************************************************)
 
 module Common = struct
   (*HELPER FUNCTIONS*)
-
-  (*Convert arguments of function to string*)
 
   let declared_variables : (string, bool) Hashtbl.t =
     Hashtbl.create (module String)
@@ -60,16 +53,12 @@ module Common = struct
     match bool with true -> "true" | false -> "false"
 
   (*check if else statement comes next*)
-  let checkIfElseStatementNext (stmt: Ast.statement list) : bool =
+  let checkIfElseStatementNext (stmt : Ast.statement list) : bool =
     match stmt with
     | [] -> false
-    | Ast.Elif { test = _ ; body = _}::_ -> true
+    | Ast.Elif { test = _; body = _ } :: _ -> true
     | Ast.Else { body = _ } :: _ -> true
     | _ -> false
-
-  (*check if else statement comes next*)
-
-  (*check if else statement comes next*)
 
   let primitiveToString input =
     match input with
