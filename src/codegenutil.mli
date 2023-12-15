@@ -1,10 +1,4 @@
-
-
-
-
 module FunctionLookUp : sig
-
-
   val findReturnType : string -> Ast.statement list -> Ast.primitive
 end
 
@@ -12,7 +6,7 @@ module Common : sig
   val declared_variables : (string, bool) Base.Hashtbl.t
   val is_variable_declared : string -> bool
   val declare_variable : string -> unit
-  val clearHashTable : unit -> unit
+  val clear : unit -> unit
   val checkIfSubAdd : Ast.expression -> bool
   val convertBoolToString : bool -> string
   val primitiveToString : Ast.primitive -> string

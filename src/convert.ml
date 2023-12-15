@@ -34,6 +34,7 @@ let colored (color : int) (message : string) : unit =
 
 let green = colored 34
 let blue = colored 31
+let cyan = colored 36
 
 let run_ops (listOfFiles : string list) (verbose : bool) =
   let rec helper listOfFiles =
@@ -69,29 +70,38 @@ let run_ops (listOfFiles : string list) (verbose : bool) =
   in
   helper listOfFiles
 
-(* bit of a hacky way to make the output
-   more REPL friendly *)
-let strip_main (s : string) : string =
-  String.sub s ~pos:13 ~len:(String.length s - 15)
+let strip_main (ast : Ast.ast) : Ast.ast =
+  match ast with
+  | Ast.Function { name = "main"; parameters = _; return = _; body } :: [] ->
+      body
+  | _ -> ast
 
-let rec repl (verbose : bool) () =
-  green ">>> ";
+let rec repl (verbose : bool) (acc : string list) () =
+  if List.length acc = 0 then green ">>> " else green "... ";
   Out_channel.flush stdout;
+
   match In_channel.input_line In_channel.stdin with
-  | None -> printf "Exiting REPL."
-  | Some s when String.(s = "exit") -> printf "Exiting REPL"
-  | Some s ->
-      (try
-         let ast = Parse.to_ast s in
-         let c = ast |> ConModule.convertToString |> strip_main in
-         if verbose then (
-           blue "AST:\n";
-           printf "%s\n\n" (ast |> Ast.showAst);
-           blue "C:\n")
-         else ();
-         printf "%s\n" c
-       with e -> printf "Encountered error %s\n" (Exn.to_string e));
-      repl verbose ()
+  | None -> printf "Leaving REPL"
+  | Some s when String.(s = "exit") -> printf "Leaving REPL"
+  | Some s when String.(s = "") ->
+      acc |> List.rev |> String.concat ~sep:"\n" |> process_input verbose
+  | Some s -> repl verbose (s :: acc) ()
+
+and process_input (verbose : bool) (input : string) =
+  (try
+     Codegenutil.Common.clear ();
+     let ast = Parse.to_ast input in
+     let c = ast |> strip_main |> ConModule.convertToString in
+     if verbose then (
+       blue "AST:\n";
+       printf "%s\n\n" (ast |> Ast.showAst);
+       blue "C:\n")
+     else ();
+     printf "%s\n" c
+   with e ->
+     cyan "Encountered error:\n";
+     printf "%s\n" (Exn.to_string e));
+  repl verbose [] ()
 
 (* command lines *)
 let command =
@@ -102,7 +112,7 @@ let command =
       and verbose = flag "-v" no_arg ~doc:"enable logging" in
       fun () ->
         match List.length files with
-        | 0 -> repl verbose ()
+        | 0 -> repl verbose [] ()
         | _ -> run_ops files verbose)
 
 let () = Command_unix.run command

@@ -37,7 +37,7 @@ module Common = struct
   let declare_variable id =
     Hashtbl.add_exn declared_variables ~key:id ~data:true
 
-  let clearHashTable () = Hashtbl.clear declared_variables
+  let clear () = Hashtbl.clear declared_variables
 
   (*CORE FUNCTIONS*)
 
