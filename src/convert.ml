@@ -38,7 +38,7 @@ let renamePyFileToH fileName =
   |> List.hd_exn)
   ^ ".h"
 
-let run_ops (listOfFiles : string list) (verbose : bool) =
+let run_ops (listOfFiles : string list) (verbose : int) =
   List.fold listOfFiles ~init:() ~f:(fun _ currentFile ->
       let outputFileC = "./" ^ renamePyFileToC currentFile in
       let outputFileH = "./" ^ renamePyFileToH currentFile in
@@ -52,7 +52,7 @@ let run_ops (listOfFiles : string list) (verbose : bool) =
         let header = ast |> GenerateHeader.convertToString in
 
         (* log *)
-        if verbose then (
+        if verbose > 0 then (
           Pretty.blue "Python:\n";
           printf "%s\n\n" file;
           Pretty.blue "AST:\n";
@@ -76,7 +76,7 @@ let strip_main (ast : Ast.ast) : Ast.ast =
   | _ -> ast
 
 (* initiate REPL *)
-let rec repl (verbose : bool) (acc : string list) =
+let rec repl (verbose : int) (acc : string list) =
   if List.length acc = 0 then Pretty.green ">>> " else Pretty.green "... ";
   Out_channel.flush stdout;
 
@@ -87,17 +87,19 @@ let rec repl (verbose : bool) (acc : string list) =
       acc |> List.rev |> String.concat ~sep:"\n" |> process verbose
   | Some s -> repl verbose (s :: acc)
 
-and process (verbose : bool) (input : string) =
+and process (verbose : int) (input : string) =
   (try
      Codegenutil.Common.clear ();
      let ast = Parse.to_ast input in
      let c = ast |> strip_main |> ConModule.convertToString in
-     if verbose then (
+
+     if verbose = 2 then (
        Pretty.blue "AST:\n";
        printf "%s\n\n" (ast |> Ast.showAst);
-       Pretty.blue "C:\n")
-     else ();
-     printf "%s\n" c
+       Pretty.blue "C:\n";
+       printf "%s\n" c)
+     else if verbose = 1 then printf "%s\n" (ast |> Ast.showAst)
+     else printf "%s\n" c
    with Failure s ->
      Pretty.cyan "Encountered error:\n";
      printf "%s\n" s);
@@ -109,7 +111,15 @@ let command =
     ~readme:(fun () -> "More detailed information")
     Command.Let_syntax.(
       let%map_open files = anon (sequence ("source files" %: string))
-      and verbose = flag "-v" no_arg ~doc:"enable logging" in
+      and verbose =
+        flag "-v"
+          (optional_with_default 0 int)
+          ~doc:
+            " REPL:\n\
+             \t= 2 will show the AST and C code\n\
+             \t= 1 will show just the AST\n\
+             \t= 0 will show just the C code"
+      in
       fun () ->
         match List.length files with
         | 0 -> repl verbose []
