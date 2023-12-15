@@ -80,7 +80,7 @@ let funcCall_py =
 let funcCall_c =
   "int sampleFunction(int a, int b){\n\
    \twhile(a > b){\n\
-   \t\t a =- 1;\n\
+   \t\t a -= 1;\n\
    \t}\n\
    \treturn a;\n\
    }\n\

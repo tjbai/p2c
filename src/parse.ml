@@ -288,6 +288,8 @@ and parse (ts : token list) : a_context =
 
 (***********************************************************************************************)
 
+(* Some modular helpers for post-processing operations *)
+
 (* Apply f to every expression in an expression, plus itself *)
 let deep_apply (e : expression) ~(f : expression -> expression) : expression =
   let rec aux (e : expression) : expression =
@@ -424,11 +426,14 @@ let infer_type ~(tbl : type_tbl) (e : expression) : expression =
       | None -> e)
   | _ -> e
 
+(* Convert some UnaryOps to literals *)
 let replace_neg (e : expression) : expression =
   match e with
   | UnaryOp { operator = Neg; operand = IntLiteral d } -> IntLiteral (-d)
   | _ -> e
 
+(* Take global statements in python and place them in a main function *)
+(* This isn't perfect, but necessary evil for interpreted to compiled language *)
 let gather_main (ast : ast) : ast =
   let body, stripped_ast =
     List.partition_tf ast ~f:(fun s ->
