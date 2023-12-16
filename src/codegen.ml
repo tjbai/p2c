@@ -21,7 +21,18 @@ module Expressions = struct
       | true, false -> Format.sprintf "(%s) %s %s" leftText op rightText
       | false, true -> Format.sprintf "%s %s (%s)" leftText op rightText
       | false, false -> Format.sprintf "%s %s %s" leftText op rightText
-    (*and or for pembdas purposes*)
+    and addSub left op right = 
+      let leftText = mainHelper left in
+      let rightText = mainHelper right in
+      match
+        ( Codegenutil.Common.checkAndOr left,
+          Codegenutil.Common.checkAndOr right )
+      with
+      | true, true -> Format.sprintf "(%s) %s (%s)" leftText op rightText
+      | true, false -> Format.sprintf "(%s) %s %s" leftText op rightText
+      | false, true -> Format.sprintf "%s %s (%s)" leftText op rightText
+      | false, false -> Format.sprintf "%s %s %s" leftText op rightText
+    (*and or for pemdas purposes*)
     and andOrPemdas (left : Ast.expression) (right : Ast.expression)
         (op : Ast.binaryOp) : string =
       let leftText = mainHelper left in
@@ -47,7 +58,7 @@ module Expressions = struct
           | true, false -> Format.sprintf "(%s) || %s" leftText rightText
           | false, true -> Format.sprintf "%s || (%s)" leftText rightText
           | false, false -> Format.sprintf "%s || %s" leftText rightText)
-      | _ -> failwith "Invalid operator"
+      | _ -> failwith "General Expression: Invalid operator"
     and mainHelper (exp : Ast.expression) : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
@@ -75,9 +86,9 @@ module Expressions = struct
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
-          | Ast.Add -> mainHelper left ^ " + " ^ mainHelper right
+          | Ast.Add -> addSub left  "+ " right
           | Ast.Multiply -> multDiv left "*" right
-          | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
+          | Ast.Subtract -> addSub left "-" right
           | Ast.Divide -> multDiv left "/" right
           | Ast.And -> andOrPemdas left right op
           | Ast.Or -> andOrPemdas left right op
@@ -142,7 +153,7 @@ module ConModule : CodeGen = struct
     let rec functionToString prim name args stateList countTabs =
       numberOfTabs countTabs
       ^ Format.sprintf "%s %s(%s){\n%s%s}\n"
-          (Codegenutil.Common.primitiveToString prim)
+          (Codegenutil.Common.primitiveFuncToString prim)
           name
           (Codegenutil.Common.convertArgsListString args)
           (helper stateList "" (countTabs + 1))

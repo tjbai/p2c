@@ -1,6 +1,9 @@
-#include "./src/testPythonFiles/sample1.h"
+#include ".//src/testPythonFiles/sample1.h"
 
-int sampleFunction(int a, int b) {
-  int c = a + b;
-  return c;
+void foo(){
+	2 +  (3 && 3 +  4);
+}
+int main(){
+	int i = 0;
+	printf("", i);
 }

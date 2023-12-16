@@ -45,7 +45,13 @@ module Common = struct
   let checkIfSubAdd binaryOp =
     match binaryOp with
     | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
-        match op with Ast.Add -> true | Ast.Subtract -> true | _ -> false)
+        match op with Ast.Add -> true | Ast.Subtract -> true | Ast.And -> true | Ast.Or -> true | _ -> false)
+    | _ -> false
+  
+  let checkAndOr binaryOp = 
+    match binaryOp with
+    | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
+        match op with Ast.And -> true | Ast.Or -> true | _ -> false)
     | _ -> false
 
   (*converts bool to string - C type*)
@@ -61,6 +67,14 @@ module Common = struct
     | _ -> false
 
   let primitiveToString input =
+    match input with
+    | Ast.Void -> "void"
+    | Ast.Int -> "int"
+    | Ast.String -> "string"
+    | Ast.Boolean -> "bool"
+    | _ -> ""
+  
+  let primitiveFuncToString input =
     match input with
     | Ast.Void -> "void"
     | Ast.Int -> "int"
@@ -99,7 +113,7 @@ module Common = struct
               | Ast.Int -> helper tl (acc ^ "%d ")
               | Ast.String -> helper tl (acc ^ "%s ")
               | Ast.Boolean -> helper tl (acc ^ "%d ")
-              | _ -> failwith "Invalid type")
+              | _ -> failwith "Sprintf | Printf: Invalid Return type")
           | _ -> helper tl acc)
     in
     helper expList ""

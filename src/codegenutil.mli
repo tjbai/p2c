@@ -8,6 +8,7 @@ module Common : sig
   val declare_variable : string -> unit
   val clear : unit -> unit
   val checkIfSubAdd : Ast.expression -> bool
+  val checkAndOr: Ast.expression -> bool
   val convertBoolToString : bool -> string
   val primitiveToString : Ast.primitive -> string
   val checkIfAndOperatorPresent : Ast.expression -> bool
@@ -16,4 +17,5 @@ module Common : sig
   val binaryToString : Ast.binaryOp option -> string
   val convertArgsListString : (string * Ast.primitive) list -> string
   val checkIfElseStatementNext : Ast.statement list -> bool
+  val primitiveFuncToString: Ast.primitive -> string
 end

@@ -1,3 +1,6 @@
-def sampleFunction(a: int, b: int) -> int:
-    c = a + b 
-    return c
+def foo():
+    2 + (3 and 3 + 4)
+
+
+i = 0
+print(i)
