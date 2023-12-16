@@ -24,9 +24,19 @@ end
 (***********************************************************************************************)
 
 module Common = struct
+
+
+  let convertPrimToFormat (prim : Ast.primitive) : string =
+    match prim with
+    | Ast.Int -> "%d"
+    | Ast.String -> "%s"
+    | Ast.Boolean -> "%d"
+    | _ -> ""
+    
+
   (*HELPER FUNCTIONS*)
 
-  let declared_variables : (string, bool) Hashtbl.t =
+  let declared_variables : (string, Ast.primitive) Hashtbl.t =
     Hashtbl.create (module String)
 
   let is_variable_declared id =
@@ -34,8 +44,13 @@ module Common = struct
     | Some _ -> true
     | None -> false
 
-  let declare_variable id =
-    Hashtbl.add_exn declared_variables ~key:id ~data:true
+  let declare_variable id prim = 
+    Hashtbl.add_exn declared_variables ~key:id ~data:prim
+  
+  let find_type id =
+    match Hashtbl.find declared_variables id with
+    | Some prim -> prim
+    | None -> failwith "Variable not found"
 
   let clear () = Hashtbl.clear declared_variables
 
@@ -99,25 +114,9 @@ module Common = struct
         | _ -> checkIfOrOperatorPresent left || checkIfOrOperatorPresent right)
     | _ -> false
 
-  let getReturnType tree_main expList =
-    let rec helper expList acc =
-      match expList with
-      | [] -> acc
-      | hd :: tl -> (
-          match hd with
-          | Ast.IntLiteral _ -> helper tl (acc ^ "%d ")
-          | Ast.StringLiteral _ -> helper tl (acc ^ "%s ")
-          | Ast.BooleanLiteral _ -> helper tl (acc ^ "%d ")
-          | Ast.FunctionCall { name = id; arguments = _ } -> (
-              match FunctionLookUp.findReturnType id tree_main with
-              | Ast.Int -> helper tl (acc ^ "%d ")
-              | Ast.String -> helper tl (acc ^ "%s ")
-              | Ast.Boolean -> helper tl (acc ^ "%d ")
-              | _ -> failwith "Sprintf | Printf: Invalid Return type")
-          | _ -> helper tl acc)
-    in
-    helper expList ""
-
+  let getReturnType id = 
+    Hashtbl.find_exn declared_variables id
+  
   let convertArgsListString (argsList : (string * Ast.primitive) list) : string
       =
     let rec helper (argsList : (string * Ast.primitive) list) : string =

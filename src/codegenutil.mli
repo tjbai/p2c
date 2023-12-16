@@ -3,9 +3,9 @@ module FunctionLookUp : sig
 end
 
 module Common : sig
-  val declared_variables : (string, bool) Base.Hashtbl.t
-  val is_variable_declared : string -> bool
-  val declare_variable : string -> unit
+  val declared_variables : (string, Ast.primitive) Base.Hashtbl.t
+  val is_variable_declared : string -> bool 
+  val declare_variable : string -> Ast.primitive -> unit
   val clear : unit -> unit
   val checkIfSubAdd : Ast.expression -> bool
   val checkAndOr: Ast.expression -> bool
@@ -13,9 +13,12 @@ module Common : sig
   val primitiveToString : Ast.primitive -> string
   val checkIfAndOperatorPresent : Ast.expression -> bool
   val checkIfOrOperatorPresent : Ast.expression -> bool
-  val getReturnType : Ast.statement list -> Ast.expression list -> string
   val binaryToString : Ast.binaryOp option -> string
   val convertArgsListString : (string * Ast.primitive) list -> string
   val checkIfElseStatementNext : Ast.statement list -> bool
   val primitiveFuncToString: Ast.primitive -> string
+  val getReturnType : string -> Ast.primitive
+  val find_type: string ->Ast.primitive
+  val convertPrimToFormat: Ast.primitive -> string
+
 end

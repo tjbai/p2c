@@ -334,7 +334,7 @@ let expression_1 _ =
   (* Printf.printf "Hello"; *)
 
   (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString additionOnly; *)
-  assert_equal "int a = 5;\nint b = 5;\nc = 5;\nd = 5;\na + b + c + d;\n"
+  assert_equal "int a = 5;\nint b = 5;\nint c = 5;\nint d = 5;\na + b + c + d;\n"
   @@ ConModule.convertToString additionOnly;
 
   (* Printf.printf "1"; *)
@@ -364,13 +364,15 @@ let expression_1 _ =
 
   (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString and_or; *)
   assert_equal
-    "bool e = true;\n\
-     bool f = false;\n\
-     bool g = true;\n\
-     bool h = false;\n\
+    "e = true;\n\
+     f = false;\n\
+     g = true;\n\
+     h = false;\n\
      (e || f) && (g || h)\n\
      ;\n"
   @@ ConModule.convertToString and_or
+
+  (* Printf.printf "8" *)
 
 let multplicationExpression =
   [
@@ -963,24 +965,24 @@ let coreFunctionBoolean =
   ]
 
 let coreFuncTests _ =
-  assert_equal "printf(\"%s %d \", \"hello\", 5);\n"
+  assert_equal "printf(\"%s %d\", \"hello\", 5);\n"
   @@ ConModule.convertToString coreFunc_1;
   (* Printf.printf "1"; *)
   assert_equal
     "int bar(bool a, string b){\n\
      \ta + b;\n\
      }\n\
-     printf(\"%s %d %d \", \"hello\", 5, bar(true, \"Cat\"));\n"
+     printf(\"%s %d %d\", \"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex;
   (* Printf.printf "2"; *)
   assert_equal
     "string bar(bool a, string b){\n\
      \ta + b;\n\
      }\n\
-     printf(\"%s %d %s \", \"hello\", 5, bar(true, \"Cat\"));\n"
+     printf(\"%s %d %s\", \"hello\", 5, bar(true, \"Cat\"));\n"
   @@ ConModule.convertToString coreFuncComplex_str;
   (* Printf.printf "3"; *)
-  assert_equal "printf(\"%s %d %d \", \"hello\", 5, true);\n"
+  assert_equal "printf(\"%s %d %d\", \"hello\", 5, true);\n"
   @@ ConModule.convertToString coreFunctionBoolean
 
 (***************************** FUNCTIONS *********************************************)

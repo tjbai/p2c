@@ -4,4 +4,3 @@
 #include <string.h>
 #include <math.h>
 void foo();
-int main();
