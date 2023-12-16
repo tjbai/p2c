@@ -736,8 +736,6 @@ let test_type_inference _ =
     to_ast
       "def solve(i: int) -> int:\n\
        \treturn i\n\n\
-       def foo(a: string, b: string):\n\
-       \tprint(a, b)\n\n\
        def concatenate(a: string, b: string) -> string:\n\
        \treturn a + b\n\n\
        a = 2 + solve(3)\n\

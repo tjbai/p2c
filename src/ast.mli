@@ -66,8 +66,9 @@ type statement =
   | Pass
   | Break
   | Continue
+[@@deriving sexp]
 
-type ast = statement list
+type ast = statement list [@@deriving sexp]
 
 val showAst : ast -> string
 val showExpression : expression -> string

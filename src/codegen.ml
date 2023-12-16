@@ -11,45 +11,39 @@ module Expressions = struct
   let convertExpressionToString (exp : Ast.expression) main_tree : string =
     (*multiplication and division*)
     let rec multDiv left op right =
-
       let leftText = mainHelper left in
       let rightText = mainHelper right in
       match
         ( Codegenutil.Common.checkIfSubAdd left,
           Codegenutil.Common.checkIfSubAdd right )
       with
-      | true, true ->
-        Format.sprintf "(%s) %s (%s)" leftText op rightText;
-      | true, false ->
-        Format.sprintf"(%s) %s %s" leftText op rightText;
-      | false, true ->
-        Format.sprintf "%s %s (%s)" leftText op rightText;
-      | false, false -> Format.sprintf "%s %s %s" leftText op rightText;
+      | true, true -> Format.sprintf "(%s) %s (%s)" leftText op rightText
+      | true, false -> Format.sprintf "(%s) %s %s" leftText op rightText
+      | false, true -> Format.sprintf "%s %s (%s)" leftText op rightText
+      | false, false -> Format.sprintf "%s %s %s" leftText op rightText
     (*and or for pembdas purposes*)
     and andOrPemdas (left : Ast.expression) (right : Ast.expression)
         (op : Ast.binaryOp) : string =
-        let leftText = mainHelper left in
-        let rightText = mainHelper right in
+      let leftText = mainHelper left in
+      let rightText = mainHelper right in
       match op with
       | Ast.And -> (
           match
             ( Codegenutil.Common.checkIfOrOperatorPresent left,
               Codegenutil.Common.checkIfOrOperatorPresent right )
           with
-          | true, true ->
-            Format.sprintf "(%s) && (%s)\n" leftText rightText
+          | true, true -> Format.sprintf "(%s) && (%s)\n" leftText rightText
           | true, false -> Format.sprintf "(%s) && %s" leftText rightText
           | false, true -> Format.sprintf "%s && (%s)" leftText rightText
           | false, false -> Format.sprintf "%s && %s" leftText rightText)
       | Ast.Or -> (
-        let leftText = mainHelper left in
-        let rightText = mainHelper right in
+          let leftText = mainHelper left in
+          let rightText = mainHelper right in
           match
             ( Codegenutil.Common.checkIfAndOperatorPresent left,
               Codegenutil.Common.checkIfAndOperatorPresent right )
           with
-          | true, true ->
-            Format.sprintf "(%s) || (%s)\n" leftText rightText
+          | true, true -> Format.sprintf "(%s) || (%s)\n" leftText rightText
           | true, false -> Format.sprintf "(%s) || %s" leftText rightText
           | false, true -> Format.sprintf "%s || (%s)" leftText rightText
           | false, false -> Format.sprintf "%s || %s" leftText rightText)
@@ -63,8 +57,8 @@ module Expressions = struct
       (*Assignments*)
       | Ast.Assignment { name = id; value = exp; t = varType; operator = op } ->
           (*Need to consider edge case += etc*)
-          let checkToAddEquals = 
-            match Codegenutil.Common.binaryToString op with 
+          let checkToAddEquals =
+            match Codegenutil.Common.binaryToString op with
             | "=" -> ""
             | _ -> "="
           in
@@ -75,9 +69,9 @@ module Expressions = struct
           else (
             Codegenutil.Common.declare_variable id;
             Codegenutil.Common.primitiveToString varType
-            ^ " " ^ id ^ " "
-            ^ (checkToAddEquals)^Codegenutil.Common.binaryToString op
-            ^ " " ^ mainHelper exp) 
+            ^ " " ^ id ^ " " ^ checkToAddEquals
+            ^ Codegenutil.Common.binaryToString op
+            ^ " " ^ mainHelper exp)
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
@@ -101,12 +95,10 @@ module Expressions = struct
           | Ast.Neg -> "-(" ^ mainHelper exp ^ ")")
       (*Functional Calls*)
       | Ast.FunctionCall { name = id; arguments = expList } ->
-
           (*need to filter out external functions*)
-          let filteredOutName = 
-            if String.contains id '.' then 
-              String.split id ~on:'.'
-              |> List.last_exn
+          let filteredOutName =
+            if String.contains id '.' then
+              String.split id ~on:'.' |> List.last_exn
             else id
           in
 
@@ -117,10 +109,13 @@ module Expressions = struct
           let args = List.map expList ~f:mainHelper in
           match id with
           | Print ->
-            Format.sprintf "printf(\"%s\", %s)" (Codegenutil.Common.getReturnType main_tree expList) (String.concat ~sep:", " args)
+              Format.sprintf "printf(\"%s\", %s)"
+                (Codegenutil.Common.getReturnType main_tree expList)
+                (String.concat ~sep:", " args)
           | Input ->
-            Format.sprintf "scanf(\"%s\", %s)" (Codegenutil.Common.getReturnType main_tree expList) (String.concat ~sep:",&" args))
-
+              Format.sprintf "scanf(\"%s\", %s)"
+                (Codegenutil.Common.getReturnType main_tree expList)
+                (String.concat ~sep:",&" args))
     in
 
     let result = mainHelper exp in
@@ -130,24 +125,28 @@ end
 (***********************************************************************************************)
 module ConModule : CodeGen = struct
   (*CORE FUNCTIONS*)
-  let numberOfTabs (num : int) : string =
-    String.make num '\t'
+  let numberOfTabs (num : int) : string = String.make num '\t'
+
   (*RETURN - e.g. return a + b*)
-  let returnExpression (input : string) (countTabs: int) : string = (numberOfTabs countTabs )^"return " ^ input
+  let returnExpression (input : string) (countTabs : int) : string =
+    numberOfTabs countTabs ^ "return " ^ input
 
   (*Convert for loop to string*)
   let convertForLoopString (value : string) (lower : string) (upper : string)
       (increment : string) =
-    Format.sprintf "for(int %s=%s;%s<=%s;%s+=%s)" value lower value
-      upper value increment
+    Format.sprintf "for(int %s=%s;%s<=%s;%s+=%s)" value lower value upper value
+      increment
 
   let convertToString (main_tree : Ast.statement list) : string =
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
-      numberOfTabs countTabs ^ Format.sprintf "%s %s(%s){\n%s%s}\n" (Codegenutil.Common.primitiveToString prim) name
-        (Codegenutil.Common.convertArgsListString args)
-        (helper stateList "" (countTabs + 1))
-        (numberOfTabs countTabs)
+      numberOfTabs countTabs
+      ^ Format.sprintf "%s %s(%s){\n%s%s}\n"
+          (Codegenutil.Common.primitiveToString prim)
+          name
+          (Codegenutil.Common.convertArgsListString args)
+          (helper stateList "" (countTabs + 1))
+          (numberOfTabs countTabs)
     (*for loop conversion*)
     and forLoopStr id lower upper inc statelist countTabs =
       numberOfTabs countTabs
@@ -160,25 +159,28 @@ module ConModule : CodeGen = struct
       ^ numberOfTabs countTabs ^ "}\n"
     (*while loop conversion*)
     and whileLoopStr exp statelist countTabs =
-      numberOfTabs countTabs ^ Format.sprintf "while(%s){\n%s%s}\n"
-        (Expressions.convertExpressionToString exp main_tree)
-        (helper statelist "" (countTabs + 1))
-        (numberOfTabs countTabs)
+      numberOfTabs countTabs
+      ^ Format.sprintf "while(%s){\n%s%s}\n"
+          (Expressions.convertExpressionToString exp main_tree)
+          (helper statelist "" (countTabs + 1))
+          (numberOfTabs countTabs)
     (*if statement conversion*)
     and ifStr exp statelist countTabs =
-      numberOfTabs countTabs ^ Format.sprintf "if(%s){\n%s%s}"
-        (Expressions.convertExpressionToString exp main_tree)
-        (helper statelist "" (countTabs + 1))
-        (numberOfTabs countTabs)
+      numberOfTabs countTabs
+      ^ Format.sprintf "if(%s){\n%s%s}"
+          (Expressions.convertExpressionToString exp main_tree)
+          (helper statelist "" (countTabs + 1))
+          (numberOfTabs countTabs)
     (*else if statement conversion*)
     and elifStr exp statelist countTabs =
-      numberOfTabs countTabs ^ Format.sprintf "else if(%s){\n%s%s}\n"
-        (Expressions.convertExpressionToString exp main_tree)
-        (helper statelist "" (countTabs + 1))
-        (numberOfTabs countTabs)
+      numberOfTabs countTabs
+      ^ Format.sprintf "else if(%s){\n%s%s}\n"
+          (Expressions.convertExpressionToString exp main_tree)
+          (helper statelist "" (countTabs + 1))
+          (numberOfTabs countTabs)
     (*else string conversions*)
     and elseStr statelist countTabs =
-      Format.sprintf "else{\n%s%s}\n" 
+      Format.sprintf "else{\n%s%s}\n"
         (helper statelist "" (countTabs + 1))
         (numberOfTabs countTabs)
     and helper (tree_list : Ast.statement list) (acc : string) (countTabs : int)
@@ -214,12 +216,14 @@ module ConModule : CodeGen = struct
           helper tl (acc ^ whileLoopStr exp statelist countTabs) countTabs
       (*if statements*)
       | Ast.If { test = exp; body = statelist } :: tl ->
-        let addNewLineIfElse = 
-          match Codegenutil.Common.checkIfElseStatementNext tl with
-          | true -> ""
-          | false -> "\n"
-        in
-          helper tl ((acc ^ ifStr exp statelist countTabs)^addNewLineIfElse) countTabs
+          let addNewLineIfElse =
+            match Codegenutil.Common.checkIfElseStatementNext tl with
+            | true -> ""
+            | false -> "\n"
+          in
+          helper tl
+            ((acc ^ ifStr exp statelist countTabs) ^ addNewLineIfElse)
+            countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
           helper tl (acc ^ elifStr exp statelist countTabs) countTabs
@@ -229,9 +233,11 @@ module ConModule : CodeGen = struct
       (*Control statements*)
       | Ast.Return exp :: tl ->
           helper tl
-          (acc^(returnExpression
-                 (Expressions.convertExpressionToString exp main_tree) countTabs))
-              countTabs
+            (acc
+            ^ returnExpression
+                (Expressions.convertExpressionToString exp main_tree)
+                countTabs)
+            countTabs
           ^ ";\n"
       | Ast.Pass :: tl ->
           numberOfTabs countTabs ^ helper tl (acc ^ "return;\n") countTabs
