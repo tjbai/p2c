@@ -108,7 +108,6 @@ let split_and_process (s : string) : string list =
   |> join []
 
 (* Convert processed line to token types *)
-(* NOTE: Maybe  _parse_ some relevant values here? *)
 let tokenize_line (line : string list) : token list =
   let rec aux (acc : token list) (comment : bool) (rem : string list) =
     match rem with
