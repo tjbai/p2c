@@ -78,6 +78,8 @@ module Expressions = struct
             ^ Codegenutil.Common.binaryToString op ^ checkToAddEquals
             ^ " " ^ mainHelper exp
           else (
+            (* Printf.printf "Assign Variable %s not declared %s\n" id
+              (Codegenutil.Common.primitiveToString varType); *)
             Codegenutil.Common.declare_variable id varType;
             Codegenutil.Common.primitiveToString varType
             ^ " " ^ id ^ " "
@@ -177,16 +179,17 @@ module ConModule : CodeGen = struct
   let convertToString (main_tree : Ast.statement list) : string =
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
-      let textResult = numberOfTabs countTabs
-      ^ Format.sprintf "%s %s(%s){\n%s%s}\n"
-          (Codegenutil.Common.primitiveFuncToString prim)
-          name
-          (Codegenutil.Common.convertArgsListString args)
-          (helper stateList "" (countTabs + 1))
-          (numberOfTabs countTabs) in 
+      (* Printf.printf "Function %s\n" name; *)
       Codegenutil.Common.clear ();
-      textResult
-    (*for loop conversion*)
+
+      (*this ordering is required due to ocaml optimization messing ordering*)
+      let tabs1 = numberOfTabs countTabs in
+      let prim_str = Codegenutil.Common.primitiveFuncToString prim in
+      let args_str = Codegenutil.Common.convertArgsListString args in
+      let helper_str = helper stateList "" (countTabs + 1) in
+      let tabs2 = numberOfTabs countTabs in
+      tabs1 ^ Format.sprintf "%s %s(%s){\n%s%s}\n" prim_str name args_str helper_str tabs2
+
     and forLoopStr id lower upper inc statelist countTabs =
       numberOfTabs countTabs
       ^ convertForLoopString id
@@ -237,10 +240,12 @@ module ConModule : CodeGen = struct
       | Ast.Function
           { name; parameters = args; return = prim; body = stateList }
         :: tl ->
+          Codegenutil.Common.clear ();
           (*if the main function is empty then we ignore*)
           if String.equal name "main" && List.is_empty stateList then
             helper tl acc countTabs
           else
+
             helper tl
               (acc ^ functionToString prim name args stateList countTabs)
               countTabs
@@ -309,9 +314,12 @@ module GenerateHeader : CodeGen = struct
     let rec helper (tree_list : Ast.statement list) (acc : string) : string =
       match tree_list with
       | [] -> acc
-      | Ast.Import s :: tl -> helper tl (acc ^ "#include \"" ^ s ^ ".h\"\n")
+      | Ast.Import s :: tl -> 
+        Codegenutil.Common.clear ();
+        helper tl (acc ^ "#include \"" ^ s ^ ".h\"\n")
       | Ast.Function { name; parameters = args; return = prim; body = bdy }
         :: tl ->
+          Codegenutil.Common.clear ();
           (*if the main function is empty*)
           if String.equal name "main" && List.is_empty bdy then helper tl acc
           else

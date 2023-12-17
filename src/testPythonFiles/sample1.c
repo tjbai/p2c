@@ -1,6 +1,8 @@
 #include ".//src/testPythonFiles/sample1.h"
 
-void foo(){
-	int i = 0;
+int foo(int i, int j){
+	i = 0;
 	i += 1;
+	j += 3;
+	return i + j;
 }

@@ -3,4 +3,4 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-void foo();
+int foo(int i, int j);

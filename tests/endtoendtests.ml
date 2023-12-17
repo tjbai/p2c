@@ -77,8 +77,7 @@ let funcCall_py =
    callFunction()"
 
 let funcCall_c =
-"int sampleFunction(int a, int b){\n\twhile(a > b){\n\t\t a - 1;\n\t}\n\treturn a;\n}\nvoid callFunction(){\n\treturn sampleFunction(10, 5);\n}\nint main(){\n\tcallFunction();\n}\n"
-
+"int sampleFunction(int a, int b){\n\twhile(a > b){\n\t\ta -= 1;\n\t}\n\treturn a;\n}\nvoid callFunction(){\n\treturn sampleFunction(10, 5);\n}\nint main(){\n\tcallFunction();\n}\n"
 let testFuncCall _ = 
   (* Printf.printf "%s\n" @@ escape_chars @@ (funcCall_py |> e2e); *)
   assert_equal funcCall_c @@ (funcCall_py |> e2e)
