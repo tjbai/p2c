@@ -118,10 +118,15 @@ module Common = struct
   
   let convertArgsListString (argsList : (string * Ast.primitive) list) : string
       =
+      (* Printf.printf "Function 2\n"; *)
+
     let rec helper (argsList : (string * Ast.primitive) list) : string =
       match argsList with
       | [] -> ""
-      | (id, prim) :: tl -> primitiveToString prim ^ " " ^ id ^ ", " ^ helper tl
+      | (id, prim) :: tl -> 
+        (* Printf.printf "Args id: %s, prim: %s\n" id (primitiveToString prim); *)
+        declare_variable id prim;
+        primitiveToString prim ^ " " ^ id ^ ", " ^ helper tl
     in
 
     let result = helper argsList in

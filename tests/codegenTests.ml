@@ -316,7 +316,7 @@ let and_or =
   - USE THIS TO DEBUG THE ACTUAL OUTPUT - BUT REALIZE THIS RESULTS IN A SHRODINGER'S CAT SITUATION.
   PRINTIN OUT THE RESULT WILL YIELD THE RESULT *WITHOUT* THE PRINT STATEMENT
 *)
-(* let string_to_list str =
+let string_to_list str =
      let rec loop i limit =
        if i = limit then []
        else str.[i] :: loop (i + 1) limit
@@ -329,7 +329,7 @@ let and_or =
      | '\\' -> "\\\\"
      | c -> String.make 1 c
    in
-   String.concat "" (List.map escape_char (  s |> string_to_list )) *)
+   String.concat "" (List.map escape_char (  s |> string_to_list ))
 let expression_1 _ =
   (* Printf.printf "Hello"; *)
 
@@ -363,13 +363,7 @@ let expression_1 _ =
   (* Printf.printf "7"; *)
 
   (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString and_or; *)
-  assert_equal
-    "e = true;\n\
-     f = false;\n\
-     g = true;\n\
-     h = false;\n\
-     (e || f) && (g || h)\n\
-     ;\n"
+  assert_equal "bool e = true;\nbool f = false;\nbool g = true;\nbool h = false;\n(e || f) && (g || h)\n;\n"
   @@ ConModule.convertToString and_or
 
   (* Printf.printf "8" *)
@@ -771,17 +765,8 @@ let assignment_1 _ =
   @@ ConModule.convertToString assignment_eg_4
 
 let assignment_2 _ =
-  assert_equal
-    "int foo(int a){\n\
-     \tint c = 5;\n\
-     \tint d = 5;\n\
-     \tc + d;\n\
-     }\n\
-     int bar(int a){\n\
-     \tc = 5;\n\
-     \td = 5;\n\
-     \tc + d;\n\
-     }\n"
+  (* Printf.printf "%s\n" @@ escape_chars @@ ConModule.convertToString assignment_eg_5; *)
+  assert_equal "int foo(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}\nint bar(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}\n"
   @@ ConModule.convertToString assignment_eg_5
 
 let _assignment_3 _ =
@@ -1258,15 +1243,15 @@ let test_functionHeaders _ =
 (***************************** UTIL **************************************************)
 
 let codeGenTests =
+  Printf.printf "%s\n" @@ escape_chars "Placeholder"; (*place holder so we don't need to continueously uncomment escape_chars - only used for debugging*)
   "codeGen tests"
   >: test_list
        [
+        "expression_1" >:: expression_1;
+        "assignment tests 2" >:: assignment_2;
+        "return tests" >:: controlOperators;
          "assignment tests" >:: assignment_1;
-         "assignment tests 2" >:: assignment_2;
-         (* "assignment tests 3" >:: assignment_3; *)
          "binary to string" >:: test_binaryToString;
-         "return tests" >:: controlOperators;
-         "expression_1" >:: expression_1;
          "expression_2" >:: expression_2;
          "function call tests" >:: functionCall_1;
          "core function tests" >:: coreFuncTests;

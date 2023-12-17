@@ -3,4 +3,5 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-void foo();
+#include "sample2.h"
+int main();

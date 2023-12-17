@@ -4,7 +4,7 @@ let e2e source = source |> Parse.to_ast |> Codegen.ConModule.convertToString
 
 (************** UTILITIES **************)
 
-  (* let string_to_list str =
+  let string_to_list str =
     let rec loop i limit =
       if i = limit then []
       else str.[i] :: loop (i + 1) limit
@@ -17,7 +17,7 @@ let e2e source = source |> Parse.to_ast |> Codegen.ConModule.convertToString
     | '\\' -> "\\\\"
     | c -> String.make 1 c
   in
-  String.concat "" (List.map escape_char (  s |> string_to_list ))    *)
+  String.concat "" (List.map escape_char (  s |> string_to_list ))   
 
 (************** FUNCTION GENERATION TESTS **************)
 
@@ -77,8 +77,7 @@ let funcCall_py =
    callFunction()"
 
 let funcCall_c =
-"int sampleFunction(int a, int b){\n\twhile(a > b){\n\t\t a - 1;\n\t}\n\treturn a;\n}\nvoid callFunction(){\n\treturn sampleFunction(10, 5);\n}\nint main(){\n\tcallFunction();\n}\n"
-
+"int sampleFunction(int a, int b){\n\twhile(a > b){\n\t\ta -= 1;\n\t}\n\treturn a;\n}\nvoid callFunction(){\n\treturn sampleFunction(10, 5);\n}\nint main(){\n\tcallFunction();\n}\n"
 let testFuncCall _ = 
   (* Printf.printf "%s\n" @@ escape_chars @@ (funcCall_py |> e2e); *)
   assert_equal funcCall_c @@ (funcCall_py |> e2e)
@@ -141,8 +140,7 @@ let test_issues _ =
 
   (* Printf.printf "%s\n" @@ escape_chars @@ e2e "def foo():\n\ti = 0\n\ti += 1"; *)
 
-  assert_equal
-"void foo(){\n\ti = 0;\n\ti += 1;\n}\n"
+  assert_equal "void foo(){\n\tint i = 0;\n\ti += 1;\n}\n"
   @@ e2e
   "def foo():\n\ti = 0\n\ti += 1"
   (* Printf.printf "4\n" *)
@@ -152,6 +150,7 @@ let test_issues _ =
 
 (**************************** TESTS **************************)
 let tests =
+  Printf.printf "%s\n" @@ escape_chars @@ "Placeholder"; (*placeholder so we don't have to comment and uncomment escape_chars for testing*)
   "End to End Tests"
   >: test_list
        [
