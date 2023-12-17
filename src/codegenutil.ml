@@ -25,7 +25,6 @@ end
 
 module Common = struct
 
-
   let convertPrimToFormat (prim : Ast.primitive) : string =
     match prim with
     | Ast.Int -> "%d"
