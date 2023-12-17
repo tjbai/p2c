@@ -8,7 +8,7 @@ end
 module Expressions = struct
   (*CONVERSION of Expression*)
 
-  let convertExpressionToString (exp : Ast.expression) main_tree : string =
+  let convertExpressionToString (exp : Ast.expression) tree_main : string =
     (*multiplication and division*)
     let rec multDiv left op right =
       let leftText = mainHelper left in
@@ -21,7 +21,18 @@ module Expressions = struct
       | true, false -> Format.sprintf "(%s) %s %s" leftText op rightText
       | false, true -> Format.sprintf "%s %s (%s)" leftText op rightText
       | false, false -> Format.sprintf "%s %s %s" leftText op rightText
-    (*and or for pembdas purposes*)
+    and addSub left op right = 
+      let leftText = mainHelper left in
+      let rightText = mainHelper right in
+      match
+        ( Codegenutil.Common.checkAndOr left,
+          Codegenutil.Common.checkAndOr right )
+      with
+      | true, true -> Format.sprintf "(%s) %s (%s)" leftText op rightText
+      | true, false -> Format.sprintf "(%s) %s %s" leftText op rightText
+      | false, true -> Format.sprintf "%s %s (%s)" leftText op rightText
+      | false, false -> Format.sprintf "%s %s %s" leftText op rightText
+    (*and or for pemdas purposes*)
     and andOrPemdas (left : Ast.expression) (right : Ast.expression)
         (op : Ast.binaryOp) : string =
       let leftText = mainHelper left in
@@ -47,8 +58,8 @@ module Expressions = struct
           | true, false -> Format.sprintf "(%s) || %s" leftText rightText
           | false, true -> Format.sprintf "%s || (%s)" leftText rightText
           | false, false -> Format.sprintf "%s || %s" leftText rightText)
-      | _ -> failwith "Invalid operator"
-    and mainHelper (exp : Ast.expression) : string =
+      | _ -> failwith "General Expression: Invalid operator"
+    and mainHelper (exp : Ast.expression)  : string =
       match exp with
       | Ast.IntLiteral i -> string_of_int i
       | Ast.StringLiteral s -> "\"" ^ s ^ "\""
@@ -64,20 +75,20 @@ module Expressions = struct
           in
           if Codegenutil.Common.is_variable_declared id then
             id ^ " "
-            ^ Codegenutil.Common.binaryToString op
+            ^ Codegenutil.Common.binaryToString op ^ checkToAddEquals
             ^ " " ^ mainHelper exp
           else (
-            Codegenutil.Common.declare_variable id;
+            Codegenutil.Common.declare_variable id varType;
             Codegenutil.Common.primitiveToString varType
-            ^ " " ^ id ^ " " ^ checkToAddEquals
+            ^ " " ^ id ^ " "
             ^ Codegenutil.Common.binaryToString op
             ^ " " ^ mainHelper exp)
       (*Binary Operations*)
       | Ast.BinaryOp { operator = op; left; right } -> (
           match op with
-          | Ast.Add -> mainHelper left ^ " + " ^ mainHelper right
+          | Ast.Add -> addSub left  "+" right
           | Ast.Multiply -> multDiv left "*" right
-          | Ast.Subtract -> mainHelper left ^ " - " ^ mainHelper right
+          | Ast.Subtract -> addSub left "-" right
           | Ast.Divide -> multDiv left "/" right
           | Ast.And -> andOrPemdas left right op
           | Ast.Or -> andOrPemdas left right op
@@ -107,14 +118,40 @@ module Expressions = struct
       (*Core Function Calls*)
       | Ast.CoreFunctionCall { name = id; arguments = expList } -> (
           let args = List.map expList ~f:mainHelper in
+          
+          let getArgumentTypes (expList : Ast.expression list) : string = 
+            let rec helper (expList : Ast.expression list) (acc : string) : string =
+              match expList with
+              | [] -> acc
+              | hd :: tl -> 
+                match hd with
+                | Ast.IntLiteral _ -> helper tl (acc^"%d ")
+                | Ast.StringLiteral _ -> helper tl (acc^"%s ")
+                | Ast.BooleanLiteral _ -> helper tl (acc^"%d ")
+                | Ast.Identifier name -> 
+                  let argType = Codegenutil.Common.find_type name in
+                  helper tl (acc ^ ( Codegenutil.Common.convertPrimToFormat argType) ^ " ")
+              | Ast.FunctionCall { name = id; arguments = _ } -> (
+                match Codegenutil.FunctionLookUp.findReturnType id tree_main with
+                | Ast.Int -> helper tl (acc ^ "%d ")
+                | Ast.String -> helper tl (acc ^ "%s ")
+                | Ast.Boolean -> helper tl (acc ^ "%d ")
+                | _ -> failwith "Invalid type")
+                | _ -> failwith "Invalid argument type"
+            in
+            let output = helper expList ""  in 
+            String.sub output ~pos:0 ~len:(String.length output -1)
+
+          in
+           
           match id with
           | Print ->
               Format.sprintf "printf(\"%s\", %s)"
-                (Codegenutil.Common.getReturnType main_tree expList)
+                ( getArgumentTypes expList)
                 (String.concat ~sep:", " args)
           | Input ->
               Format.sprintf "scanf(\"%s\", %s)"
-                (Codegenutil.Common.getReturnType main_tree expList)
+                (getArgumentTypes expList)
                 (String.concat ~sep:",&" args))
     in
 
@@ -142,7 +179,7 @@ module ConModule : CodeGen = struct
     let rec functionToString prim name args stateList countTabs =
       numberOfTabs countTabs
       ^ Format.sprintf "%s %s(%s){\n%s%s}\n"
-          (Codegenutil.Common.primitiveToString prim)
+          (Codegenutil.Common.primitiveFuncToString prim)
           name
           (Codegenutil.Common.convertArgsListString args)
           (helper stateList "" (countTabs + 1))

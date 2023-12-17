@@ -48,6 +48,7 @@ let run_ops (listOfFiles : string list) (verbose : int) =
         (* convert *)
         let file = FileIO.readFile currentFile in
         let ast = file |> Parse.to_ast in
+        Printf.printf "Ast is %s\n" (ast |> Ast.showAst);
         let src = includes ^ "\n\n" ^ (ast |> ConModule.convertToString) in
         let header = ast |> GenerateHeader.convertToString in
 
