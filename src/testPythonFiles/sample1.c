@@ -1,8 +1,13 @@
-#include ".//src/testPythonFiles/sample1.h"
+#include ".//sample1.h"
 
-int foo(int i, int j){
-	i = 0;
-	i += 1;
-	j += 3;
-	return i + j;
+int main(){
+			printf("%s", "Welcome to sample1.py");
+	int userInput = 0;
+//should address this as a limitation
+	userInput = getUserInput();
+	printf("%s", "Incrementing to 100...");
+	int increment = 0;
+//should address this as a limitation
+	increment = getIncrementTo100(userInput);
+	return 0;
 }

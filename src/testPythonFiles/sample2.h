@@ -3,6 +3,5 @@
 #include <stdbool.h>
 #include <string.h>
 #include <math.h>
-int sampleFunction(int a, int b);
- callFunction();
-int main();
+int getUserInput();
+int getIncrementTo100(int max);

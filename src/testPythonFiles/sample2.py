@@ -1,11 +1,12 @@
-def sampleFunction(a: int, b: int) -> int:
-    while a > b:
-        a -= 1
-    return a
+def getIncrementTo100(max: int) -> int:
+    i = 0
+    while i < max:
+        i += 1
+        print(i)
+    return i
 
 
-def callFunction():
-    return sampleFunction(10, 5)
-
-
-callFunction()
+def getUserInput() -> int:
+    output = 0
+    output = input("Enter a number: ")
+    return output
