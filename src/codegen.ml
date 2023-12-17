@@ -177,13 +177,15 @@ module ConModule : CodeGen = struct
   let convertToString (main_tree : Ast.statement list) : string =
     (*function to string*)
     let rec functionToString prim name args stateList countTabs =
-      numberOfTabs countTabs
+      let textResult = numberOfTabs countTabs
       ^ Format.sprintf "%s %s(%s){\n%s%s}\n"
           (Codegenutil.Common.primitiveFuncToString prim)
           name
           (Codegenutil.Common.convertArgsListString args)
           (helper stateList "" (countTabs + 1))
-          (numberOfTabs countTabs)
+          (numberOfTabs countTabs) in 
+      Codegenutil.Common.clear ();
+      textResult
     (*for loop conversion*)
     and forLoopStr id lower upper inc statelist countTabs =
       numberOfTabs countTabs
