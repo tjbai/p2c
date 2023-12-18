@@ -61,7 +61,7 @@ let if_elif_eg_c =
 "int sampleFunction(int a, int b){\n\tif(a > b){\n\t\treturn a;\n\t}\telse if(a < b){\n\t\treturn b;\n\t}\nelse{\n\t\treturn a + b;\n\t}\n}\n"
 
 let testIf _ =
-  (* Printf.printf "%s\n" @@ escape_chars @@ (if_eg_py |> e2e); *)
+  Printf.printf "%s\n" @@ escape_chars @@ (if_eg_py |> e2e);
   assert_equal if_eg_c @@ (if_eg_py |> e2e);
 
   assert_equal if_elif_eg_c @@ (if_elif_eg_py |> e2e)
@@ -92,7 +92,7 @@ let funcWithComments_py =
    \telse:\n\
    \t\treturn b"
 
-let funcWithComments_c = "int sampleFunction(int a, int b){\n\t//HELLO! THIS IS A COMMENT!\n\tif(a > b){\n\t\treturn a;\n\t}else{\n\t\treturn b;\n\t}\n}\n"
+let funcWithComments_c = "int sampleFunction(int a, int b){\n\t//HELLO! THIS IS A COMMENT!\n\tif(a > b){\n\t\treturn a;\n\t}\telse{\n\t\treturn b;\n\t}\n}\n"
 
 let testFuncWithComments _ =
   (* Printf.printf "%s\n" @@ escape_chars @@ (funcWithComments_py |> e2e); *)

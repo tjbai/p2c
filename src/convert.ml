@@ -30,8 +30,15 @@ let renamePyFileToC fileName =
   |> List.hd_exn)
   ^ ".c"
 
+(* let cleanFilePrextension fileName =
+  fileName
+  |> String.split_on_chars ~on:[ '.' ]
+  |> List.filter ~f:(fun s -> String.length s > 0)
+  |> List.hd_exn *)
+
 (*converts python name to C equivalent for header files*)
 let renamePyFileToH fileName =
+  Printf.printf "File name is %s\n" fileName;
   (fileName
   |> String.split_on_chars ~on:[ '.' ]
   |> List.filter ~f:(fun s -> String.length s > 0)
@@ -42,6 +49,8 @@ let run_ops (listOfFiles : string list) (verbose : int) =
   List.fold listOfFiles ~init:() ~f:(fun _ currentFile ->
       let outputFileC = "./" ^ renamePyFileToC currentFile in
       let outputFileH = "./" ^ renamePyFileToH currentFile in
+      Printf.printf "Output file C is %s\n" outputFileC;
+      Printf.printf "Output file H is %s\n" outputFileH;
       let includes = "#include \"" ^ outputFileH ^ "\"" in
 
       try
