@@ -24,14 +24,12 @@ end
 (***********************************************************************************************)
 
 module Common = struct
-
   let convertPrimToFormat (prim : Ast.primitive) : string =
     match prim with
     | Ast.Int -> "%d"
     | Ast.String -> "%s"
     | Ast.Boolean -> "%d"
     | _ -> ""
-    
 
   (*HELPER FUNCTIONS*)
 
@@ -43,13 +41,13 @@ module Common = struct
     | Some _ -> true
     | None -> false
 
-  let declare_variable id prim = 
+  let declare_variable id prim =
     Hashtbl.add_exn declared_variables ~key:id ~data:prim
-  
+
   let find_type id =
     match Hashtbl.find declared_variables id with
     | Some prim -> prim
-    | None -> failwith "Variable not found"
+    | None -> Int
 
   let clear () = Hashtbl.clear declared_variables
 
@@ -59,10 +57,15 @@ module Common = struct
   let checkIfSubAdd binaryOp =
     match binaryOp with
     | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
-        match op with Ast.Add -> true | Ast.Subtract -> true | Ast.And -> true | Ast.Or -> true | _ -> false)
+        match op with
+        | Ast.Add -> true
+        | Ast.Subtract -> true
+        | Ast.And -> true
+        | Ast.Or -> true
+        | _ -> false)
     | _ -> false
-  
-  let checkAndOr binaryOp = 
+
+  let checkAndOr binaryOp =
     match binaryOp with
     | Ast.BinaryOp { operator = op; left = _; right = _ } -> (
         match op with Ast.And -> true | Ast.Or -> true | _ -> false)
@@ -87,7 +90,7 @@ module Common = struct
     | Ast.String -> "string"
     | Ast.Boolean -> "bool"
     | _ -> ""
-  
+
   let primitiveFuncToString input =
     match input with
     | Ast.Void -> "void"
@@ -113,20 +116,18 @@ module Common = struct
         | _ -> checkIfOrOperatorPresent left || checkIfOrOperatorPresent right)
     | _ -> false
 
-  let getReturnType id = 
-    Hashtbl.find_exn declared_variables id
-  
+  let getReturnType id = Hashtbl.find_exn declared_variables id
+
   let convertArgsListString (argsList : (string * Ast.primitive) list) : string
       =
-      (* Printf.printf "Function 2\n"; *)
-
+    (* Printf.printf "Function 2\n"; *)
     let rec helper (argsList : (string * Ast.primitive) list) : string =
       match argsList with
       | [] -> ""
-      | (id, prim) :: tl -> 
-        (* Printf.printf "Args id: %s, prim: %s\n" id (primitiveToString prim); *)
-        declare_variable id prim;
-        primitiveToString prim ^ " " ^ id ^ ", " ^ helper tl
+      | (id, prim) :: tl ->
+          (* Printf.printf "Args id: %s, prim: %s\n" id (primitiveToString prim); *)
+          declare_variable id prim;
+          primitiveToString prim ^ " " ^ id ^ ", " ^ helper tl
     in
 
     let result = helper argsList in

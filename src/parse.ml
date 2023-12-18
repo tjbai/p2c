@@ -391,6 +391,9 @@ let init_tbl (ast : ast) : type_tbl =
       | Expression (Assignment { name; t; value; operator }) ->
           add tbl name t;
           tbl
+      | For { value; lower; upper; increment; body } ->
+          add tbl value Int;
+          tbl
       | _ -> tbl)
 
 let infer_type ~(tbl : type_tbl) (e : expression) : expression =
@@ -438,7 +441,7 @@ let gather_main (ast : ast) : ast =
   let body, stripped_ast =
     List.partition_tf ast ~f:(fun s ->
         match s with
-        | Expression _ | If _ | Elif _ | Else _ -> true
+        | Expression _ | If _ | Elif _ | Else _ | For _ | While _ -> true
         | _ -> false)
   in
 

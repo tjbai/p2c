@@ -317,24 +317,26 @@ let and_or =
   PRINTIN OUT THE RESULT WILL YIELD THE RESULT *WITHOUT* THE PRINT STATEMENT
 *)
 let string_to_list str =
-     let rec loop i limit =
-       if i = limit then []
-       else str.[i] :: loop (i + 1) limit
-     in
-     loop 0 (String.length str)
-   let escape_chars (s : string) : string =
-   let escape_char = function
-     | '\n' -> "\\n"
-     | '\t' -> "\\t"
-     | '\\' -> "\\\\"
-     | c -> String.make 1 c
-   in
-   String.concat "" (List.map escape_char (  s |> string_to_list ))
+  let rec loop i limit =
+    if i = limit then [] else str.[i] :: loop (i + 1) limit
+  in
+  loop 0 (String.length str)
+
+let _escape_chars (s : string) : string =
+  let escape_char = function
+    | '\n' -> "\\n"
+    | '\t' -> "\\t"
+    | '\\' -> "\\\\"
+    | c -> String.make 1 c
+  in
+  String.concat "" (List.map escape_char (s |> string_to_list))
+
 let expression_1 _ =
   (* Printf.printf "Hello"; *)
 
   (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString additionOnly; *)
-  assert_equal "int a = 5;\nint b = 5;\nint c = 5;\nint d = 5;\na + b + c + d;\n"
+  assert_equal
+    "int a = 5;\nint b = 5;\nint c = 5;\nint d = 5;\na + b + c + d;\n"
   @@ ConModule.convertToString additionOnly;
 
   (* Printf.printf "1"; *)
@@ -363,10 +365,16 @@ let expression_1 _ =
   (* Printf.printf "7"; *)
 
   (* Printf.printf "%s" @@ escape_chars @@ ConModule.convertToString and_or; *)
-  assert_equal "bool e = true;\nbool f = false;\nbool g = true;\nbool h = false;\n(e || f) && (g || h)\n;\n"
+  assert_equal
+    "bool e = true;\n\
+     bool f = false;\n\
+     bool g = true;\n\
+     bool h = false;\n\
+     (e || f) && (g || h)\n\
+     ;\n"
   @@ ConModule.convertToString and_or
 
-  (* Printf.printf "8" *)
+(* Printf.printf "8" *)
 
 let multplicationExpression =
   [
@@ -766,7 +774,17 @@ let assignment_1 _ =
 
 let assignment_2 _ =
   (* Printf.printf "%s\n" @@ escape_chars @@ ConModule.convertToString assignment_eg_5; *)
-  assert_equal "int foo(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}\nint bar(int a){\n\tint c = 5;\n\tint d = 5;\n\tc + d;\n}\n"
+  assert_equal
+    "int foo(int a){\n\
+     \tint c = 5;\n\
+     \tint d = 5;\n\
+     \tc + d;\n\
+     }\n\
+     int bar(int a){\n\
+     \tint c = 5;\n\
+     \tint d = 5;\n\
+     \tc + d;\n\
+     }\n"
   @@ ConModule.convertToString assignment_eg_5
 
 let _assignment_3 _ =
@@ -1243,14 +1261,13 @@ let test_functionHeaders _ =
 (***************************** UTIL **************************************************)
 
 let codeGenTests =
-  Printf.printf "%s\n" @@ escape_chars "Placeholder"; (*place holder so we don't need to continueously uncomment escape_chars - only used for debugging*)
   "codeGen tests"
   >: test_list
        [
-        "expression_1" >:: expression_1;
-        "assignment tests 2" >:: assignment_2;
-        "return tests" >:: controlOperators;
+         "expression_1" >:: expression_1;
          "assignment tests" >:: assignment_1;
+         "assignment tests 2" >:: assignment_2;
+         "return tests" >:: controlOperators;
          "binary to string" >:: test_binaryToString;
          "expression_2" >:: expression_2;
          "function call tests" >:: functionCall_1;
