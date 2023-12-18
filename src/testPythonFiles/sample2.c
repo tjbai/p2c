@@ -3,13 +3,14 @@
 int getIncrementTo100(int max){
 	int i = 0;
 	while(i < max){
+		if(i % 3 == 0){
+			printf("%s %d", "\ndivisible by 3", i);
+		}else if(i % 2 == 0){
+			printf("%s %d", "\ndivisible by 2", i);
+		}else{
+			printf("%s %d", "\nnot divisible by 3 or 2", i);
+		}
 		i += 1;
-		printf("%d", i);
 	}
 	return i;
-}
-int getUserInput(){
-	int output = 0;
-	output = scanf("%s", "Enter a number : ");
-	return output;
 }
