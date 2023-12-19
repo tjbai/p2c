@@ -215,8 +215,7 @@ module ConModule : CodeGen = struct
           (numberOfTabs countTabs)
     (*else if statement conversion*)
     and elifStr exp statelist countTabs =
-      numberOfTabs countTabs
-      ^ Format.sprintf "else if(%s){\n%s%s}\n"
+      Format.sprintf "else if(%s){\n%s%s}"
           (Expressions.convertExpressionToString exp main_tree)
           (helper statelist "" (countTabs + 1))
           (numberOfTabs countTabs)
@@ -270,7 +269,12 @@ module ConModule : CodeGen = struct
             countTabs
       (*else if statements*)
       | Ast.Elif { test = exp; body = statelist } :: tl ->
-          helper tl (acc ^ elifStr exp statelist countTabs) countTabs
+          let addNewLineIfElse =
+            match Codegenutil.Common.checkIfElseStatementNext tl with
+            | true -> ""
+            | false -> "\n"
+          in
+          helper tl ((acc ^ elifStr exp statelist countTabs)^addNewLineIfElse) countTabs
       (*else statements*)
       | Ast.Else { body = statelist } :: tl ->
           helper tl (acc ^ elseStr statelist countTabs) countTabs
@@ -319,16 +323,21 @@ module GenerateHeader : CodeGen = struct
         helper tl (acc ^ "#include \"" ^ s ^ ".h\"\n")
       | Ast.Function { name; parameters = args; return = prim; body = bdy }
         :: tl ->
-          Codegenutil.Common.clear ();
+          let getFunctionSignature = 
+            Codegenutil.Common.clear ();
+
+            (*this ordering is required due to ocaml optimization messing ordering*)
+     
+            let prim_str = Codegenutil.Common.primitiveFuncToString prim in
+            let args_str = Codegenutil.Common.convertArgsListString args in
+  
+            Format.sprintf "%s %s(%s);\n" prim_str name args_str 
+          in
           (*if the main function is empty*)
           if String.equal name "main" && List.is_empty bdy then helper tl acc
           else
             helper tl
-              (acc
-              ^ Codegenutil.Common.primitiveToString prim
-              ^ " " ^ name ^ "("
-              ^ Codegenutil.Common.convertArgsListString args
-              ^ ");\n")
+            acc^getFunctionSignature
       | _ :: tl -> helper tl acc
     in
 

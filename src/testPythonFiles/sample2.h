@@ -4,4 +4,3 @@
 #include <string.h>
 #include <math.h>
 int getIncrementTo100(int max);
-int getUserInput();

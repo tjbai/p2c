@@ -4,19 +4,18 @@
 
 # Cleans the project
 
-dune clean 
 
-# # Builds
+# # # Builds
 # cd src
-rm -f *.coverage
+# rm -f *.coverage
 
-dune clean
-dune test
+# dune clean
+# # dune test
 # dune build
 
 
 # # test files
-# files="./testPythonFiles/sample1.py"
+# files="./testPythonFiles/sample1.py ./testPythonFiles/sample2.py "
 
 # # Runs the tests
 # location=$(../_build/default/src/convert.exe $files)
@@ -26,16 +25,16 @@ dune test
 
 ################## UNCOMMENT BELOW FOR COVERAGE AND PACKAGING ##################
 # Cleans the project
-# rm -f *.coverage
-# dune clean
+rm -f *.coverage
+dune clean
 
-# # Runs Coverage
-# find . -name '*.coverage' | xargs rm -f
-# dune runtest --instrument-with bisect_ppx --force
+# Runs Coverage
+find . -name '*.coverage' | xargs rm -f
+dune runtest --instrument-with bisect_ppx --force
 
-# # Displays the report
-# bisect-ppx-report html
-# firefox ./_coverage/index.html
+# Displays the report
+bisect-ppx-report html
+firefox ./_coverage/index.html
 
-# # builds the project
-# dune build
+# builds the project
+dune build
